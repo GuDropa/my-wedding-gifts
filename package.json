@@ -1,0 +1,34 @@
+{
+  "name": "lista-presentes",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lista de presentes do casamento de Gabriely & Gustavo",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "airtable:bootstrap": "tsx scripts/bootstrap-airtable.ts"
+  },
+  "dependencies": {
+    "@mercadopago/sdk-react": "^1.0.7",
+    "airtable": "^0.12.2",
+    "dotenv": "^17.4.2",
+    "lucide-react": "^1.17.0",
+    "mercadopago": "^3.0.0",
+    "next": "^16.2.6",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.15.0",
+    "eslint-config-next": "^16.2.6",
+    "tsx": "^4.22.4",
+    "typescript": "^5.6.3"
+  }
+}

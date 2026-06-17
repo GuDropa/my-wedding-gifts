@@ -1,0 +1,140 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  background: var(--paper);
+  display: grid;
+  place-items: center;
+  padding: var(--sp-5) var(--sp-4);
+  overflow: hidden;
+}
+
+.shell {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 620px;
+}
+
+.note {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+}
+
+.eyebrow {
+  color: var(--sage);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  justify-content: center;
+}
+.heart {
+  color: var(--blush);
+  font-size: 14px;
+  animation: heart-beat 1.6s ease-in-out infinite;
+}
+
+@keyframes heart-beat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+
+.dear {
+  font-size: clamp(44px, 8vw, 72px);
+  font-style: italic;
+  color: var(--olive);
+  margin-top: var(--sp-3);
+  opacity: 0;
+  animation: rise-in var(--dur-slow) var(--ease) 200ms forwards;
+}
+
+.body {
+  font-family: var(--font-sans-stack);
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--ink);
+  max-width: 460px;
+  margin: var(--sp-4) 0 var(--sp-5);
+}
+
+.body em {
+  color: var(--olive-deep);
+  font-style: italic;
+  font-family: var(--font-display-stack);
+  font-size: 19px;
+}
+
+/* "write-in" — typewriter-like reveal */
+.writeIn {
+  opacity: 0;
+  animation: write-in 900ms var(--ease-soft) 700ms forwards;
+}
+
+@keyframes write-in {
+  from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.divider {
+  width: 60%;
+  height: 1px;
+  background: var(--line);
+  margin: var(--sp-4) auto;
+}
+
+.signature {
+  font-size: clamp(28px, 5vw, 44px);
+  color: var(--olive);
+  opacity: 0;
+  animation: rise-in var(--dur-slow) var(--ease) 1600ms forwards;
+}
+
+/* ---------- pétalas drifting ---------- */
+.petalLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.petal {
+  position: absolute;
+  top: -20px;
+  display: block;
+  background: radial-gradient(ellipse at center, var(--blush) 30%, transparent 70%);
+  border-radius: 60% 40% 65% 35%;
+  opacity: 0;
+  animation-name: petal-drift;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+@keyframes petal-drift {
+  0% {
+    transform: translateY(-20px) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% { opacity: 0.55; }
+  50% {
+    transform: translateY(50vh) translateX(20px) rotate(180deg);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translateY(110vh) translateX(-10px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .petal { display: none; }
+  .writeIn, .dear, .signature { animation: none; opacity: 1; transform: none; }
+}

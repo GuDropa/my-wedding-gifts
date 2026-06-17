@@ -1,0 +1,115 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.card:hover:not(.soldOut) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.soldOut {
+  opacity: 0.62;
+  filter: saturate(0.7);
+}
+
+.photo {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.photoImg {
+  object-fit: cover;
+}
+.photoIcon {
+  color: var(--sage-muted);
+  opacity: 0.6;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  flex: 1;
+}
+
+.name {
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--olive);
+}
+
+.desc {
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 2.6em;
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--line);
+}
+
+.price {
+  color: var(--olive-deep);
+  font-size: 20px;
+}
+
+.availability {
+  color: var(--sage);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.cta {
+  margin-top: var(--sp-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-5);
+  background: var(--olive);
+  color: var(--paper);
+  border-radius: var(--r-pill);
+  font-family: var(--font-sans-stack);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.cta:hover {
+  background: var(--olive-deep);
+  transform: translateY(-1px);
+}
+.cta:active {
+  transform: scale(0.98);
+}
+
+.soldOutCopy {
+  margin: var(--sp-2) 0 0;
+  padding: var(--sp-3);
+  background: var(--paper-soft);
+  border: 1px dashed var(--sage-muted);
+  border-radius: var(--r-md);
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  font-style: italic;
+}

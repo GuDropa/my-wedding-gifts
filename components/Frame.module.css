@@ -1,0 +1,26 @@
+.outer {
+  position: relative;
+  width: 100%;
+}
+
+.frame {
+  --frame-inset: 24px;
+  position: relative;
+  padding: calc(var(--frame-inset) + var(--sp-6));
+}
+
+.frame::before {
+  content: "";
+  position: absolute;
+  inset: var(--frame-inset);
+  border: 1px solid var(--line-strong);
+  pointer-events: none;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .frame {
+    --frame-inset: 12px;
+    padding: calc(var(--frame-inset) + var(--sp-5));
+  }
+}

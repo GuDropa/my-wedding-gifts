@@ -1,0 +1,27 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.corner {
+  position: absolute;
+  width: 240px;
+  height: auto;
+  user-select: none;
+}
+
+.tl { top: -24px; left: -24px; }
+.br { bottom: -24px; right: -24px; }
+.tr { top: -24px; right: -24px; }
+.bl { bottom: -24px; left: -24px; }
+
+@media (max-width: 640px) {
+  .corner { width: 160px; }
+  .tl, .tr { top: -12px; }
+  .bl, .br { bottom: -12px; }
+  .tl, .bl { left: -12px; }
+  .tr, .br { right: -12px; }
+}
