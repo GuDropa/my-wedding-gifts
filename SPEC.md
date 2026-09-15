@@ -105,6 +105,8 @@ Web app privado p/ casamento de Gabriely & Gustavo (21 / 11 / 2026, Espaço Eden
 - V29: branch mock de pagamento ! `NODE_ENV ≠ production` — em prod sem MP creds → 503 explícito, ⊥ grava Purchase approved
 - V30: Payment Brick `initialization.preferenceId` ! acompanhado de `paymentMethods.mercadoPago` — ⊥ passar preferenceId no fluxo que processa server-side (⊥ carteira MP, guest fica na página)
 - V31: pagamento recusado → resposta ! carregar `status_detail` & UI ! traduzir p/ motivo em pt-BR (V5) — "não aprovado" seco ⊥ é diagnosticável nem acionável
+- V32: `onSubmit` do Payment Brick ! devolver Promise que **rejeita** em falha (doc oficial) — resolve sempre faz o Brick tratar recusa como sucesso & perder o formulário preenchido
+- V33: Brick ! montar com `onReady` sinalizando fim da montagem — loader nosso cai só aí, ⊥ antes (área vazia piscando)
 
 ## §T — Tasks
 
@@ -138,6 +140,8 @@ T24|x|corrigir `countApprovedForGift` → filtrar record-id em JS; manter como r
 T25|x|pix end-to-end — propagar `transaction_data` → `PixPanel` (QR + copia-e-cola + poll status) → /obrigado só após approved|C3,V28,B3
 T26|x|gate do branch mock atrás de NODE_ENV; 503 em prod sem MP creds|V29,B4
 T27|x|corrigir init do Brick (preferenceId, entityType) + propagar `status_detail` c/ copy pt-BR|V5,V30,V31,B5,B6,B7
+T28|x|onSubmit rejeita em falha + aviso de recusa acima do Brick (⊥ reload p/ tentar de novo)|V32,B8
+T29|x|onReady do Brick controla o loader; Brick faz fade-in ao ficar pronto|V17,V33
 ```
 
 ## §B — Bugs
@@ -151,4 +155,5 @@ B4|2026-09-14|`mpConfigured()=false` → branch mock grava `Purchases.Status=app
 B5|2026-09-14|`initialization.preferenceId` passado sem `paymentMethods.mercadoPago` → Brick alerta e ignora; preferenceId ⊥ é necessário quando o pagamento é criado pelo nosso backend|V30,T27
 B6|2026-09-14|`payer` sem `entityType` → Brick alerta "entityType only receives individual or association"; campo é PSE/Colômbia, mas o Brick valida mesmo assim|V30,T27
 B7|2026-09-14|`status_detail` do MP descartado em `/api/process-payment` → toda recusa vira "Pagamento não aprovado" sem motivo; convidado ⊥ sabe o que corrigir, casal ⊥ consegue depurar|V31,T27
+B8|2026-09-14|`onSubmit` era `async` c/ catch que engolia o erro ∴ sempre resolvia; Brick tratava recusa como sucesso e a única saída era `location.reload()`, perdendo os dados do cartão|V32,T28
 ```

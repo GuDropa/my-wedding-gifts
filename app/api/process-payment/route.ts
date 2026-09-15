@@ -80,25 +80,38 @@ export async function POST(req: Request) {
       console.warn("[process-payment] countApprovedForGift falhou, prosseguindo:", err);
     }
 
-    const existing = await findPurchaseByIdempotencyKey(externalReference);
-    if (existing) {
-      return NextResponse.json({
-        status: existing.Status,
-        paymentId: existing.MPPaymentId ?? null,
-        idempotent: true,
-      });
-    }
+    // Airtable fora de try/catch virava 500 cru, sem motivo nenhum na resposta
+    // (rate limit 5 req/s — V24 — é a causa mais provável em uso real).
+    try {
+      const existing = await findPurchaseByIdempotencyKey(externalReference);
+      if (existing) {
+        return NextResponse.json({
+          status: existing.Status,
+          paymentId: existing.MPPaymentId ?? null,
+          idempotent: true,
+        });
+      }
 
-    const created = await createPurchase({
-      Guest: [session.guestId],
-      Gift: [gift.id],
-      Status: "pending",
-      Method: method ?? "card",
-      AmountCents: gift.priceCents,
-      CreatedAt: new Date().toISOString(),
-      IdempotencyKey: externalReference,
-    });
-    purchaseRecordId = created.id;
+      const created = await createPurchase({
+        Guest: [session.guestId],
+        Gift: [gift.id],
+        Status: "pending",
+        Method: method ?? "card",
+        AmountCents: gift.priceCents,
+        CreatedAt: new Date().toISOString(),
+        IdempotencyKey: externalReference,
+      });
+      purchaseRecordId = created.id;
+    } catch (err) {
+      console.error("[/api/process-payment] Airtable falhou antes do pagamento:", err);
+      return NextResponse.json(
+        {
+          error:
+            "Não conseguimos registrar seu presente agora. Tente de novo em instantes ♥",
+        },
+        { status: 503 },
+      );
+    }
   }
 
   // ---------- V22: pagamento server-side ----------
@@ -166,7 +179,14 @@ export async function POST(req: Request) {
       ...(pix ? { pix } : {}),
     });
   } catch (err) {
-    console.error("[/api/process-payment]", err);
+    // O SDK do MP carrega o motivo real em `cause` — sem isso o 500 é cego.
+    const detail =
+      err && typeof err === "object" && "cause" in err
+        ? JSON.stringify((err as { cause?: unknown }).cause)
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("[/api/process-payment] MP recusou a requisição:", detail);
     if (hasAirtable && purchaseRecordId) {
       const { updatePurchaseStatus } = await import("@/lib/airtable/client");
       await updatePurchaseStatus(purchaseRecordId, "rejected");

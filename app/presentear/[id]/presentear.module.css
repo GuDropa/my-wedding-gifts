@@ -131,3 +131,42 @@
 }
 .mockCta:hover:not(:disabled) { background: var(--olive-deep); }
 .mockCta:disabled { opacity: 0.6; cursor: progress; }
+
+/* Recusa recuperável — fica acima do Brick, que segue montado. */
+.notice {
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--paper-soft);
+  border: 1px solid var(--danger);
+  border-radius: var(--r-sm);
+  color: var(--danger);
+  font-family: var(--font-sans-stack);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  animation: noticeIn var(--dur) var(--ease) both;
+}
+
+@keyframes noticeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice { animation: none; }
+}
+
+/* Brick monta com opacity 0 (⊥ display:none — o iframe precisa carregar p/
+   disparar onReady) e aparece suave quando fica pronto. V17. */
+.brickMount {
+  opacity: 0;
+  pointer-events: none;
+}
+.brickMountReady {
+  opacity: 1;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brickMountReady { transition: none; }
+}

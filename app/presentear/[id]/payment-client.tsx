@@ -23,6 +23,11 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
   const [error, setError] = useState<string | null>(null);
   const [pref, setPref] = useState<{ preferenceId: string; externalReference: string; mock?: boolean } | null>(null);
   const [pix, setPix] = useState<PixData | null>(null);
+  // Recusa é recuperável: mensagem acima do Brick, formulário preservado.
+  const [notice, setNotice] = useState<string | null>(null);
+  // Doc oficial: onReady sinaliza que o Brick terminou de montar — até lá o
+  // nosso loader fica de pé, senão sobra uma área vazia piscando.
+  const [brickReady, setBrickReady] = useState(false);
   const router = useRouter();
   const mountedOnce = useRef(false);
 
@@ -140,73 +145,101 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
   }
 
   return (
-    <Payment
-      initialization={{
-        amount,
-        // V30/B5: preferenceId exigiria `paymentMethods.mercadoPago` (carteira MP,
-        // que tira o convidado da página). Criamos o payment no nosso backend ∴ ⊥ usar.
-        payer: {
-          firstName: guestName.split(" ")[0],
-          // B6: o Brick valida entityType mesmo sendo campo de PSE (Colômbia).
-          entityType: "individual",
-        },
-      }}
-      customization={{
-        paymentMethods: {
-          creditCard: "all",
-          bankTransfer: ["pix"],
-          maxInstallments: 6,
-        },
-        visual: {
-          style: { theme: "default" },
-        },
-      }}
-      onSubmit={async ({ formData }) => {
-        if (!pref) return;
-        setStatus("submitting");
-        try {
-          const res = await fetch("/api/process-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              paymentData: formData,
-              giftId,
-              externalReference: pref.externalReference,
-              method: (formData as { payment_method_id?: string }).payment_method_id === "pix" ? "pix" : "card",
-            }),
-          });
-          const j = (await res.json()) as {
-            status?: string;
-            paymentId?: string;
-            statusDetail?: string | null;
-            error?: string;
-            pix?: PixData;
-          };
-          if (!res.ok) throw new Error(j.error ?? "Erro");
-          // V28: pix pendente ainda ⊥ foi pago — mostra QR em vez de agradecer.
-          if (j.pix) {
-            setPix(j.pix);
-            return;
-          }
-          if (j.status === "approved" || j.status === "pending") {
-            router.push(
-              `/obrigado?p=${encodeURIComponent(j.paymentId ?? "")}&g=${encodeURIComponent(giftName)}&s=${j.status}`,
-            );
-          } else {
+    <>
+      {!brickReady && (
+        <div className={styles.brickLoading}>
+          <Heart size={20} strokeWidth={1.5} className={styles.heartSpin} aria-hidden />
+          <span>Preparando seu presente...</span>
+        </div>
+      )}
+      {notice && (
+        <p className={styles.notice} role="alert">
+          {notice}
+        </p>
+      )}
+      <div className={brickReady ? styles.brickMountReady : styles.brickMount}>
+        <Payment
+        initialization={{
+          amount,
+          // V30/B5: preferenceId exigiria `paymentMethods.mercadoPago` (carteira MP,
+          // que tira o convidado da página). Criamos o payment no nosso backend ∴ ⊥ usar.
+          payer: {
+            firstName: guestName.split(" ")[0],
+            // B6: o Brick valida entityType mesmo sendo campo de PSE (Colômbia).
+            entityType: "individual",
+          },
+        }}
+        customization={{
+          paymentMethods: {
+            creditCard: "all",
+            bankTransfer: ["pix"],
+            maxInstallments: 6,
+          },
+          visual: {
+            style: { theme: "default" },
+          },
+        }}
+        onSubmit={async ({ formData }) => {
+          if (!pref) return;
+          setNotice(null);
+          setStatus("submitting");
+          // Doc oficial do Payment Brick: o onSubmit devolve Promise — resolve em
+          // sucesso, reject em falha. Rejeitar é o que faz o Brick PRESERVAR o
+          // formulário preenchido p/ o convidado corrigir e tentar de novo.
+          let motivo = "Não conseguimos concluir esse pagamento. Tente de novo ♥";
+          try {
+            const res = await fetch("/api/process-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                paymentData: formData,
+                giftId,
+                externalReference: pref.externalReference,
+                method:
+                  (formData as { payment_method_id?: string }).payment_method_id === "pix"
+                    ? "pix"
+                    : "card",
+              }),
+            });
+            const j = (await res.json()) as {
+              status?: string;
+              paymentId?: string;
+              statusDetail?: string | null;
+              error?: string;
+              pix?: PixData;
+            };
+            if (!res.ok) {
+              motivo = j.error ?? motivo;
+              throw new Error(motivo);
+            }
+            // V28: pix pendente ainda ⊥ foi pago — mostra QR em vez de agradecer.
+            if (j.pix) {
+              setPix(j.pix);
+              return; // resolve — o PixPanel assume a tela
+            }
+            if (j.status === "approved" || j.status === "pending") {
+              router.push(
+                `/obrigado?p=${encodeURIComponent(j.paymentId ?? "")}&g=${encodeURIComponent(giftName)}&s=${j.status}`,
+              );
+              return; // resolve
+            }
             // V31/B7: motivo concreto em vez de "não aprovado" seco.
-            setError(paymentErrorCopy(j.statusDetail));
-            setStatus("error");
+            motivo = paymentErrorCopy(j.statusDetail);
+            throw new Error(motivo);
+          } catch (err) {
+            setNotice(motivo);
+            setStatus("ready");
+            throw err; // reject — Brick mantém o formulário, ⊥ precisa recarregar
           }
-        } catch (err: unknown) {
-          setError(err instanceof Error ? err.message : "Erro inesperado");
+        }}
+        onReady={() => setBrickReady(true)}
+        onError={(err) => {
+          console.error("[Brick error]", err);
+          setError("Erro no processamento. Tente novamente.");
           setStatus("error");
-        }
-      }}
-      onError={(err) => {
-        console.error("[Brick error]", err);
-        setError("Erro no processamento. Tente novamente.");
-        setStatus("error");
-      }}
-    />
+        }}
+        />
+      </div>
+    </>
   );
 }
