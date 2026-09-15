@@ -94,6 +94,7 @@ export async function getGift(id: string): Promise<Gift | null> {
 
 export function invalidateGiftCache(): void {
   _giftCache = null;
+  _approvedCache = null;
 }
 
 // -------- Purchases --------
@@ -141,13 +142,61 @@ export async function updatePurchaseStatus(
   return flatten<PurchaseFields>(r as unknown as AnyRecord);
 }
 
-/** Conta aprovados p/ um gift — usado em re-check anti-race (V3a). */
-export async function countApprovedForGift(giftRecordId: string): Promise<number> {
+/**
+ * Compras aprovadas — 1 fetch reusado p/ derivar `claimed` (V26) e p/ o
+ * re-check anti-race (V3a). Cache curto compartilhado com Gifts (V24);
+ * `updatePurchaseStatus` invalida ambos ao mudar status.
+ */
+export interface ApprovedPurchase {
+  id: string;
+  giftIds: string[];
+  guestIds: string[];
+  amountCents: number;
+}
+
+type ApprovedCache = { ts: number; data: ApprovedPurchase[] };
+let _approvedCache: ApprovedCache | null = null;
+
+export async function listApprovedPurchases(opts?: { fresh?: boolean }): Promise<ApprovedPurchase[]> {
+  const now = Date.now();
+  if (!opts?.fresh && _approvedCache && now - _approvedCache.ts < GIFT_CACHE_TTL_MS) {
+    return _approvedCache.data;
+  }
   const rows = await base()(TABLES.purchases)
     .select({
-      filterByFormula: `AND({Status} = "approved", FIND("${giftRecordId}", ARRAYJOIN({Gift})))`,
+      filterByFormula: '{Status} = "approved"',
+      fields: ["Gift", "Guest", "AmountCents"],
       pageSize: 100,
     })
     .all();
-  return rows.length;
+  const data: ApprovedPurchase[] = rows.map((r) => ({
+    id: r.id,
+    giftIds: (r.get("Gift") as string[] | undefined) ?? [],
+    guestIds: (r.get("Guest") as string[] | undefined) ?? [],
+    amountCents: (r.get("AmountCents") as number | undefined) ?? 0,
+  }));
+  _approvedCache = { ts: now, data };
+  return data;
+}
+
+/**
+ * V27: casa record-id em JS sobre `fields.Gift[]`.
+ * ⊥ `FIND(id, ARRAYJOIN({Gift}))` — ARRAYJOIN devolve o primary field (Name),
+ * nunca o record id, ∴ a fórmula antiga casava zero (B2).
+ * Função pura p/ ser testável sem rede.
+ */
+export function countApprovedIn(
+  purchases: ApprovedPurchase[],
+  giftRecordId: string,
+): number {
+  return purchases.reduce((n, p) => (p.giftIds.includes(giftRecordId) ? n + 1 : n), 0);
+}
+
+/**
+ * V3a: re-check imediatamente antes do insert — `fresh` obrigatório,
+ * contagem velha de até 10s derrotaria o propósito do re-check.
+ */
+export async function countApprovedForGift(giftRecordId: string): Promise<number> {
+  const approved = await listApprovedPurchases({ fresh: true });
+  return countApprovedIn(approved, giftRecordId);
 }

@@ -40,7 +40,8 @@ Web app privado p/ casamento de Gabriely & Gustavo (21 / 11 / 2026, Espaço Eden
 - api: `POST /api/identify` {guestId} → 200 {session} → cookie httpOnly
 - api: `GET /api/gifts` → 200 [{id,name,desc,price,limit,claimed,photo,tint,soldOut}]
 - api: `POST /api/preference` {giftId,guestId} → 200 {preferenceId, publicKey} (cria MP Preference p/ Brick)
-- api: `POST /api/process-payment` {paymentData, giftId, guestId} → 200 {status, paymentId} (server-side `payments.create` via MP SDK, chamado pelo Brick `onSubmit`)
+- api: `POST /api/process-payment` {paymentData, giftId, guestId} → 200 {status, paymentId, pix?:{qrBase64,qrCode,ticketUrl,expiresAt}} (server-side `payments.create` via MP SDK, chamado pelo Brick `onSubmit`)
+- api: `GET /api/payment/status?ref=<externalReference>` → 200 {status} — lê `Purchases.Status` por `IdempotencyKey` (⊥ consulta MP); fonte de verdade = webhook (V12); usado p/ poll do PixPanel
 - api: `POST /api/mp/webhook` ← Mercado Pago → confirma & incrementa `claimed`
 - api: `POST /api/track/view` {} → log acesso (guest from session)
 - api: admin: `GET|POST|PUT|DELETE /api/admin/gifts` (auth required)
@@ -98,6 +99,10 @@ Web app privado p/ casamento de Gabriely & Gustavo (21 / 11 / 2026, Espaço Eden
 - V23: Airtable calls ! server-side (route handlers) — API key ⊥ no client bundle
 - V24: rate limit Airtable (5 req/s/base) → batch reads onde possível; cache `Gifts` em memória do server por ~10s
 - V25: card `/` ! compacto — ⊥ eyebrows introdutórios ("Com muita alegria…", "Quem está chegando?"); conteúdo ! {nomes, data, local, subhead, busca, lista}
+- V26: `claimed` ! computado server-side de `Purchases.Status=approved` — ⊥ ler `Gifts.ClaimedCount` (campo ⊥ garantido rollup); ponto único de verdade = `getGifts()`
+- V27: filtro por link Airtable ! comparar record-id em JS sobre `fields.<Link>[]` — ⊥ `FIND(id, ARRAYJOIN({Link}))` (ARRAYJOIN devolve primary field, ⊥ id)
+- V28: method=pix → resposta de `/api/process-payment` ! carregar {qrBase64, qrCode, ticketUrl, expiresAt} & UI ! renderizar QR + copia-e-cola; `/obrigado` ⊥ destino de pix `pending` ainda ⊥ pago
+- V29: branch mock de pagamento ! `NODE_ENV ≠ production` — em prod sem MP creds → 503 explícito, ⊥ grava Purchase approved
 
 ## §T — Tasks
 
@@ -105,7 +110,7 @@ Web app privado p/ casamento de Gabriely & Gustavo (21 / 11 / 2026, Espaço Eden
 id|status|task|cites
 T1|x|scaffold Next.js App Router + TS + CSS Modules + ESLint|C7
 T2|x|copiar tokens.css & assets do skill p/ `public/assets/` & `app/globals.css`|I.src,V9,V10
-T3|~|criar base Airtable c/ tabelas `Guests`, `Gifts`, `Purchases` (schema §I)|C7a,V2,V3
+T3|~|criar base Airtable c/ tabelas `Guests`, `Gifts`, `Purchases` (schema §I) — base & tabelas ok; `ClaimedCount` ⊥ materializou como rollup ∴ substituído por V26|C7a,V2,V3
 T3a|x|wrapper server-side `lib/airtable/client.ts` (get/list/insert/update) + cache Gifts|V23,V24
 T4|x|seed 28 convidados (de `GUESTS`) & 10 gifts (de `GIFTS`) + script bootstrap|V4,C2
 T5|x|identify screen `/` + `POST /api/identify` + session cookie HMAC (Web Crypto)|I.api,V1,V4
@@ -126,10 +131,18 @@ T19|~|deploy Vercel + env vars + webhook URL no MP dashboard (manual)|C8,I.env,I
 T20|~|teste end-to-end fluxo convidado em sandbox MP (manual)|V1-V16
 T22|x|home refactor — remover eyebrows introdutórios, manter subhead, compactar hero/divider|V25
 T21|~|testar race claim: 2 guests último slot simultâneo (precisa creds reais)|V3a
+T23|x|derivar `claimed` de Purchases dentro de `getGifts()` (1 fetch approved → agrupa por giftId) — mata dep de `ClaimedCount`|V2,V14,V26,B1
+T24|x|corrigir `countApprovedForGift` → filtrar record-id em JS; manter como re-check anti-race|V3a,V27,B2
+T25|~|pix end-to-end — propagar `transaction_data` → `PixPanel` (QR + copia-e-cola + poll status) → /obrigado só após approved|C3,V28,B3
+T26|.|gate do branch mock atrás de NODE_ENV; 503 em prod sem MP creds|V29,B4
 ```
 
 ## §B — Bugs
 
 ```
 id|date|cause|fix
+B1|2026-09-14|`Gifts.ClaimedCount` nasceu `number` (rollup do bootstrap falhou & `.catch` engoliu) → nunca escrito → `claimed`=0 ∀ gift → V2/V14 mortos, card ⊥ esgota, métrica "presentes dados"=0|V26,T23
+B2|2026-09-14|`countApprovedForGift` usa `FIND(recId, ARRAYJOIN({Gift}))`; ARRAYJOIN devolve primary field (Name) ⊥ record id → sempre 0 → V3a sem teto → over-sell ilimitado|V27,T24
+B3|2026-09-14|`payments.create` pix → `pending` + `point_of_interaction.transaction_data` descartado em `/api/process-payment` → guest cai em `/obrigado` sem QR nem copia-e-cola → ⊥ tem como pagar|V28,T25
+B4|2026-09-14|`mpConfigured()=false` → branch mock grava `Purchases.Status=approved` real; ⊥ gate por NODE_ENV → prod sem creds = presente grátis|V29,T26
 ```

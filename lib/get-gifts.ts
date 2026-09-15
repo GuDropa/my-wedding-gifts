@@ -33,15 +33,22 @@ function fromSeed(): PublicGift[] {
   }));
 }
 
+/**
+ * V26: `claimed` é derivado aqui — ponto único de verdade.
+ * ⊥ ler `Gifts.ClaimedCount` (B1: campo nunca virou rollup, sempre vazio).
+ * 1 fetch de gifts + 1 de compras aprovadas, em paralelo (V24).
+ */
 export async function getGifts(): Promise<PublicGift[]> {
   if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE_ID) {
     return fromSeed();
   }
   try {
-    const { listGifts } = await import("./airtable/client");
-    const gifts = await listGifts();
+    const { listGifts, listApprovedPurchases, countApprovedIn } = await import(
+      "./airtable/client"
+    );
+    const [gifts, approved] = await Promise.all([listGifts(), listApprovedPurchases()]);
     return gifts.map((g) => {
-      const claimed = g.ClaimedCount ?? 0;
+      const claimed = countApprovedIn(approved, g.id);
       const photo = g.Photo?.[0]?.url ?? null;
       return {
         id: g.id,

@@ -28,7 +28,8 @@ export interface GiftFields {
   Description: string;
   PriceCents: number;
   Limit: number;
-  /** rollup: COUNT(Purchases where Status='approved') — não escrever direto */
+  /** @deprecated B1/V26 — nasceu `number`, nunca materializou como rollup.
+   *  `claimed` é derivado em `getGifts()` de Purchases.Status=approved. ⊥ ler. */
   ClaimedCount?: number;
   Photo?: { url: string }[];
   Tint?: string;

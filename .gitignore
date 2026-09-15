@@ -29,3 +29,6 @@ Thumbs.db
 # misc
 *.tsbuildinfo
 next-env.d.ts
+
+# graph gerado (graphify)
+graphify-out/
