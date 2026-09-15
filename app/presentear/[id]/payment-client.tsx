@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import { Heart } from "lucide-react";
 import { PixPanel, type PixData } from "@/components/PixPanel";
+import { paymentErrorCopy } from "@/lib/mp/status-detail";
 import styles from "./presentear.module.css";
 
 interface Props {
@@ -142,8 +143,13 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
     <Payment
       initialization={{
         amount,
-        preferenceId: pref?.preferenceId,
-        payer: { firstName: guestName.split(" ")[0] },
+        // V30/B5: preferenceId exigiria `paymentMethods.mercadoPago` (carteira MP,
+        // que tira o convidado da página). Criamos o payment no nosso backend ∴ ⊥ usar.
+        payer: {
+          firstName: guestName.split(" ")[0],
+          // B6: o Brick valida entityType mesmo sendo campo de PSE (Colômbia).
+          entityType: "individual",
+        },
       }}
       customization={{
         paymentMethods: {
@@ -172,6 +178,7 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
           const j = (await res.json()) as {
             status?: string;
             paymentId?: string;
+            statusDetail?: string | null;
             error?: string;
             pix?: PixData;
           };
@@ -186,7 +193,8 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
               `/obrigado?p=${encodeURIComponent(j.paymentId ?? "")}&g=${encodeURIComponent(giftName)}&s=${j.status}`,
             );
           } else {
-            setError("Pagamento não aprovado. Tente outro método ♥");
+            // V31/B7: motivo concreto em vez de "não aprovado" seco.
+            setError(paymentErrorCopy(j.statusDetail));
             setStatus("error");
           }
         } catch (err: unknown) {

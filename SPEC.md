@@ -103,6 +103,8 @@ Web app privado p/ casamento de Gabriely & Gustavo (21 / 11 / 2026, Espaço Eden
 - V27: filtro por link Airtable ! comparar record-id em JS sobre `fields.<Link>[]` — ⊥ `FIND(id, ARRAYJOIN({Link}))` (ARRAYJOIN devolve primary field, ⊥ id)
 - V28: method=pix → resposta de `/api/process-payment` ! carregar {qrBase64, qrCode, ticketUrl, expiresAt} & UI ! renderizar QR + copia-e-cola; `/obrigado` ⊥ destino de pix `pending` ainda ⊥ pago
 - V29: branch mock de pagamento ! `NODE_ENV ≠ production` — em prod sem MP creds → 503 explícito, ⊥ grava Purchase approved
+- V30: Payment Brick `initialization.preferenceId` ! acompanhado de `paymentMethods.mercadoPago` — ⊥ passar preferenceId no fluxo que processa server-side (⊥ carteira MP, guest fica na página)
+- V31: pagamento recusado → resposta ! carregar `status_detail` & UI ! traduzir p/ motivo em pt-BR (V5) — "não aprovado" seco ⊥ é diagnosticável nem acionável
 
 ## §T — Tasks
 
@@ -135,6 +137,7 @@ T23|x|derivar `claimed` de Purchases dentro de `getGifts()` (1 fetch approved �
 T24|x|corrigir `countApprovedForGift` → filtrar record-id em JS; manter como re-check anti-race|V3a,V27,B2
 T25|x|pix end-to-end — propagar `transaction_data` → `PixPanel` (QR + copia-e-cola + poll status) → /obrigado só após approved|C3,V28,B3
 T26|x|gate do branch mock atrás de NODE_ENV; 503 em prod sem MP creds|V29,B4
+T27|x|corrigir init do Brick (preferenceId, entityType) + propagar `status_detail` c/ copy pt-BR|V5,V30,V31,B5,B6,B7
 ```
 
 ## §B — Bugs
@@ -145,4 +148,7 @@ B1|2026-09-14|`Gifts.ClaimedCount` nasceu `number` (rollup do bootstrap falhou &
 B2|2026-09-14|`countApprovedForGift` usa `FIND(recId, ARRAYJOIN({Gift}))`; ARRAYJOIN devolve primary field (Name) ⊥ record id → sempre 0 → V3a sem teto → over-sell ilimitado|V27,T24
 B3|2026-09-14|`payments.create` pix → `pending` + `point_of_interaction.transaction_data` descartado em `/api/process-payment` → guest cai em `/obrigado` sem QR nem copia-e-cola → ⊥ tem como pagar|V28,T25
 B4|2026-09-14|`mpConfigured()=false` → branch mock grava `Purchases.Status=approved` real; ⊥ gate por NODE_ENV → prod sem creds = presente grátis|V29,T26
+B5|2026-09-14|`initialization.preferenceId` passado sem `paymentMethods.mercadoPago` → Brick alerta e ignora; preferenceId ⊥ é necessário quando o pagamento é criado pelo nosso backend|V30,T27
+B6|2026-09-14|`payer` sem `entityType` → Brick alerta "entityType only receives individual or association"; campo é PSE/Colômbia, mas o Brick valida mesmo assim|V30,T27
+B7|2026-09-14|`status_detail` do MP descartado em `/api/process-payment` → toda recusa vira "Pagamento não aprovado" sem motivo; convidado ⊥ sabe o que corrigir, casal ⊥ consegue depurar|V31,T27
 ```

@@ -153,7 +153,18 @@ export async function POST(req: Request) {
           }
         : null;
 
-    return NextResponse.json({ status, paymentId, ...(pix ? { pix } : {}) });
+    // V31/B7: `status_detail` é a única pista do porquê da recusa.
+    const statusDetail = result.status_detail ? String(result.status_detail) : null;
+    if (status === "rejected") {
+      console.warn("[/api/process-payment] recusado:", statusDetail ?? "sem status_detail");
+    }
+
+    return NextResponse.json({
+      status,
+      paymentId,
+      statusDetail,
+      ...(pix ? { pix } : {}),
+    });
   } catch (err) {
     console.error("[/api/process-payment]", err);
     if (hasAirtable && purchaseRecordId) {
