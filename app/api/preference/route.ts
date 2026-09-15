@@ -6,7 +6,7 @@
 import { NextResponse } from "next/server";
 import { getGuestSession } from "@/lib/session";
 import { getGift } from "@/lib/get-gifts";
-import { mpPreference, mpConfigured } from "@/lib/mp/client";
+import { mpPreference, mpConfigured, mockAllowed } from "@/lib/mp/client";
 import { randomUUID } from "node:crypto";
 
 export async function POST(req: Request) {
@@ -33,6 +33,15 @@ export async function POST(req: Request) {
 
   const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ?? "";
   const externalReference = `${session.guestKey}:${giftId}:${randomUUID()}`;
+
+  // V29/B4: em produção sem MP configurado ⊥ existe caminho mock — 503 explícito.
+  if (!mpConfigured() && !mockAllowed()) {
+    console.error("[/api/preference] MP_ACCESS_TOKEN ausente em produção — recusando");
+    return NextResponse.json(
+      { error: "O pagamento está indisponível agora. Já estamos resolvendo ♥" },
+      { status: 503 },
+    );
+  }
 
   // Modo dev / sem MP configurado → devolve preferenceId mock p/ a UI seguir
   if (!mpConfigured()) {

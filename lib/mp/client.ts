@@ -32,3 +32,13 @@ export function mpPayment(): Payment {
 export function mpConfigured(): boolean {
   return !!token;
 }
+
+/**
+ * V29: o branch mock de pagamento só existe fora de produção.
+ * B4: sem esse gate, subir em prod sem `MP_ACCESS_TOKEN` fazia o mock gravar
+ * `Purchases.Status=approved` de verdade — presente dado sem pagar nada.
+ * `NODE_ENV` é lido na chamada (⊥ no load) p/ manter a função testável.
+ */
+export function mockAllowed(): boolean {
+  return !mpConfigured() && process.env.NODE_ENV !== "production";
+}

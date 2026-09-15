@@ -13,11 +13,22 @@
 import { NextResponse } from "next/server";
 import { getGuestSession } from "@/lib/session";
 import { getGift } from "@/lib/get-gifts";
-import { mpPayment, mpConfigured } from "@/lib/mp/client";
+import { mpPayment, mpConfigured, mockAllowed } from "@/lib/mp/client";
 
 export async function POST(req: Request) {
   const session = await getGuestSession();
   if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
+  // V29/B4: guard antes de tocar o Airtable — 503 depois do `createPurchase`
+  // deixaria uma Purchase `pending` órfã, e o branch mock abaixo gravaria
+  // `approved` sem pagamento algum.
+  if (!mpConfigured() && !mockAllowed()) {
+    console.error("[/api/process-payment] MP_ACCESS_TOKEN ausente em produção — recusando");
+    return NextResponse.json(
+      { error: "O pagamento está indisponível agora. Já estamos resolvendo ♥" },
+      { status: 503 },
+    );
+  }
 
   type Body = {
     paymentData?: Record<string, unknown>;

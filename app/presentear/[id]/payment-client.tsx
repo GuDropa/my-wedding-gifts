@@ -49,6 +49,11 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
           externalReference: string;
           mock?: boolean;
         };
+        // V29: mock só quando o servidor autoriza. Sem publicKey e sem mock,
+        // o Brick ⊥ inicializa — erro honesto em vez de botão de simular.
+        if (!data.mock && !publicKey) {
+          throw new Error("O pagamento está indisponível agora. Já estamos resolvendo ♥");
+        }
         setPref(data);
         setStatus("ready");
       } catch (err: unknown) {
@@ -113,7 +118,7 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
     );
   }
 
-  if (pref?.mock || !publicKey) {
+  if (pref?.mock) {
     return (
       <div className={styles.mock}>
         <p className={`ds-body-sm ${styles.mockNote}`}>
