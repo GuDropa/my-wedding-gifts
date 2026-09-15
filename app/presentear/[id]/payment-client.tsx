@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import { Heart } from "lucide-react";
+import { PixPanel, type PixData } from "@/components/PixPanel";
 import styles from "./presentear.module.css";
 
 interface Props {
@@ -20,6 +21,7 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
   const [pref, setPref] = useState<{ preferenceId: string; externalReference: string; mock?: boolean } | null>(null);
+  const [pix, setPix] = useState<PixData | null>(null);
   const router = useRouter();
   const mountedOnce = useRef(false);
 
@@ -105,6 +107,12 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
     );
   }
 
+  if (pix && pref) {
+    return (
+      <PixPanel pix={pix} externalReference={pref.externalReference} giftName={giftName} />
+    );
+  }
+
   if (pref?.mock || !publicKey) {
     return (
       <div className={styles.mock}>
@@ -156,8 +164,18 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
               method: (formData as { payment_method_id?: string }).payment_method_id === "pix" ? "pix" : "card",
             }),
           });
-          const j = (await res.json()) as { status?: string; paymentId?: string; error?: string };
+          const j = (await res.json()) as {
+            status?: string;
+            paymentId?: string;
+            error?: string;
+            pix?: PixData;
+          };
           if (!res.ok) throw new Error(j.error ?? "Erro");
+          // V28: pix pendente ainda ⊥ foi pago — mostra QR em vez de agradecer.
+          if (j.pix) {
+            setPix(j.pix);
+            return;
+          }
           if (j.status === "approved" || j.status === "pending") {
             router.push(
               `/obrigado?p=${encodeURIComponent(j.paymentId ?? "")}&g=${encodeURIComponent(giftName)}&s=${j.status}`,

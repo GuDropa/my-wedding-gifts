@@ -128,7 +128,21 @@ export async function POST(req: Request) {
       await updatePurchaseStatus(purchaseRecordId, mapped, paymentId);
     }
 
-    return NextResponse.json({ status, paymentId });
+    // V28: pix nasce `pending` e o QR vem em `point_of_interaction.transaction_data`.
+    // Descartar isso deixava o convidado sem como pagar (B3).
+    const td = result.point_of_interaction?.transaction_data;
+    const isPix = method === "pix" || result.payment_method_id === "pix";
+    const pix =
+      isPix && (td?.qr_code || td?.ticket_url)
+        ? {
+            qrBase64: td?.qr_code_base64 ?? null,
+            qrCode: td?.qr_code ?? null,
+            ticketUrl: td?.ticket_url ?? null,
+            expiresAt: result.date_of_expiration ?? null,
+          }
+        : null;
+
+    return NextResponse.json({ status, paymentId, ...(pix ? { pix } : {}) });
   } catch (err) {
     console.error("[/api/process-payment]", err);
     if (hasAirtable && purchaseRecordId) {

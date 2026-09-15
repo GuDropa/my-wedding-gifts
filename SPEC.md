@@ -133,7 +133,7 @@ T22|x|home refactor — remover eyebrows introdutórios, manter subhead, compact
 T21|~|testar race claim: 2 guests último slot simultâneo (precisa creds reais)|V3a
 T23|x|derivar `claimed` de Purchases dentro de `getGifts()` (1 fetch approved → agrupa por giftId) — mata dep de `ClaimedCount`|V2,V14,V26,B1
 T24|x|corrigir `countApprovedForGift` → filtrar record-id em JS; manter como re-check anti-race|V3a,V27,B2
-T25|~|pix end-to-end — propagar `transaction_data` → `PixPanel` (QR + copia-e-cola + poll status) → /obrigado só após approved|C3,V28,B3
+T25|x|pix end-to-end — propagar `transaction_data` → `PixPanel` (QR + copia-e-cola + poll status) → /obrigado só após approved|C3,V28,B3
 T26|.|gate do branch mock atrás de NODE_ENV; 503 em prod sem MP creds|V29,B4
 ```
 

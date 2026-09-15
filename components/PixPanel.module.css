@@ -1,0 +1,129 @@
+/* PixPanel — V9: só tokens. V17: --dur / --dur-slow, sem bounce. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  text-align: center;
+  animation: rise var(--dur-slow) var(--ease) both;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.eyebrow {
+  color: var(--sage);
+  margin: 0;
+}
+
+.qrWrap {
+  padding: var(--sp-3);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  line-height: 0;
+}
+
+.qr {
+  display: block;
+  width: 220px;
+  height: auto;
+  max-width: 100%;
+}
+
+.hint {
+  color: var(--ink-soft);
+  margin: 0;
+  line-height: 1.6;
+  max-width: 44ch;
+}
+
+.code {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding: var(--sp-3);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-family: var(--font-sans-stack);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  word-break: break-all;
+  text-align: left;
+  max-height: 96px;
+  overflow-y: auto;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-6);
+  background: var(--olive);
+  color: var(--paper);
+  border: none;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  font-family: var(--font-sans-stack);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  transition: background var(--dur) var(--ease);
+}
+.cta:hover { background: var(--olive-deep); }
+
+.timer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--ink-faint);
+  margin: 0;
+}
+
+.waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--sage);
+  margin: 0;
+  line-height: 1.6;
+  max-width: 40ch;
+}
+
+.pulse {
+  color: var(--blush);
+  flex-shrink: 0;
+  animation: breathe 2.4s var(--ease-soft) infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel, .pulse { animation: none; }
+}
+
+.ticket {
+  color: var(--sage);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.failed {
+  color: var(--danger);
+  margin: 0;
+  line-height: 1.6;
+}
