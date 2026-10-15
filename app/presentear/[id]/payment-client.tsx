@@ -27,7 +27,7 @@ type PaymentFormData = Parameters<PaymentProps["onSubmit"]>[0];
 export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }: Props) {
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
-  const [pref, setPref] = useState<{ preferenceId: string; externalReference: string; mock?: boolean } | null>(null);
+  const [pref, setPref] = useState<{ externalReference: string; mock?: boolean } | null>(null);
   const [pix, setPix] = useState<PixData | null>(null);
   // Recusa é recuperável: mensagem acima do Brick, formulário preservado.
   const [notice, setNotice] = useState<string | null>(null);
@@ -64,7 +64,6 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
           throw new Error(j.error ?? "Não conseguimos preparar o pagamento.");
         }
         const data = (await res.json()) as {
-          preferenceId: string;
           externalReference: string;
           mock?: boolean;
         };

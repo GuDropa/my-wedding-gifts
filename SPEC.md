@@ -39,8 +39,8 @@ Web app privado p/ casamento de Gabriely & Gustavo (21 / 11 / 2026, Espaço Eden
 ### API (Next.js route handlers)
 - api: `POST /api/identify` {guestId} → 200 {session} → cookie httpOnly
 - api: `GET /api/gifts` → 200 [{id,name,desc,price,limit,claimed,photo,tint,soldOut}]
-- api: `POST /api/preference` {giftId,guestId} → 200 {preferenceId, publicKey} (cria MP Preference p/ Brick)
-- api: `POST /api/process-payment` {paymentData, giftId, guestId} → 200 {status, paymentId, pix?:{qrBase64,qrCode,ticketUrl,expiresAt}} (server-side `payments.create` via MP SDK, chamado pelo Brick `onSubmit`)
+- api: `POST /api/preference` {giftId} → 200 {publicKey, amount, giftName, externalReference, mock?} — prepara o checkout (sold-out check + `externalReference`); ⊥ cria MP Preference (V40)
+- api: `POST /api/process-payment` {paymentData, giftId, externalReference, method} → 200 {status:approved|pending|rejected (V38), paymentId, statusDetail, pix?:{qrBase64,qrCode,ticketUrl,expiresAt}} (server-side `payments.create` via MP SDK, chamado pelo Brick `onSubmit`; body montado por `buildPaymentBody()` — V37,V39,V41)
 - api: `GET /api/payment/status?ref=<externalReference>` → 200 {status} — lê `Purchases.Status` por `IdempotencyKey` (⊥ consulta MP); fonte de verdade = webhook (V12); usado p/ poll do PixPanel
 - api: `POST /api/mp/webhook` ← Mercado Pago → confirma & incrementa `claimed`
 - api: `POST /api/track/view` {} → log acesso (guest from session)
@@ -110,6 +110,11 @@ Web app privado p/ casamento de Gabriely & Gustavo (21 / 11 / 2026, Espaço Eden
 - V34: props do `<Payment>` (`initialization`, `customization`, `onSubmit`, `onReady`, `onError`, `onBinChange`) ! identidade estável (useMemo/useCallback, estado mutável via ref) — são deps do useEffect do wrapper ∴ literal inline = unmount+remount a cada setState, formulário zerado
 - V35: `status=submitting` → UI ! indicar processamento & bloquear novo submit até a resposta (`/api/process-payment` = Airtable + MP, segundos) — Brick sozinho ⊥ cobre a espera
 - V36: container do Payment Brick ! ≥ ~282px de largura interna ∀ viewport ≥ 320px — padding de página & card ! ceder espaço em breakpoint estreito; abaixo disso o Brick corta campos à direita (CPF, e-mail, CVV) e o toque ⊥ alcança
+- V37: pix (`payment_method_id=pix`) → `payments.create` ! enviar `date_of_expiration` = agora + 30 min, ISO c/ offset `-03:00` — ⊥ default MP 24h (MP aceita 30 min…30 dias)
+- V38: status MP → `Purchases.Status` ! via `mapPaymentStatus()` único (webhook & `/api/process-payment`): `approved`→approved; `rejected|cancelled|refunded|charged_back`→rejected; resto (`pending|in_process|authorized|in_mediation`)→pending. `/api/process-payment` devolve o status mapeado ∴ cartão `in_process` (em análise) ⊥ vira recusa na UI
+- V39: `payments.create` ! levar `additional_info.items` [{id,title,description,quantity,unit_price}] & `additional_info.payer` {first_name,last_name do convidado} — aprovação de cartão & nota de qualidade MP; ⊥ sobrescrever `payer` que o Brick preencheu
+- V40: ⊥ criar MP Preference — pagamento é criado no backend (V30) ∴ Preference = chamada morta + latência em toda abertura de `/presentear/:id`
+- V41: `transaction_amount` ! = `gift.priceCents/100` do servidor — ⊥ confiar no valor do `formData` do Brick (cliente pode adulterar e pagar menos)
 
 ## §T — Tasks
 
@@ -147,6 +152,10 @@ T28|x|onSubmit rejeita em falha + aviso de recusa acima do Brick (⊥ reload p/ 
 T29|x|onReady do Brick controla o loader; Brick faz fade-in ao ficar pronto|V17,V33
 T30|x|memoizar props do Brick (identidade estável) + overlay "Confirmando seu pagamento" durante o submit|V34,V35,B9
 T31|x|breakpoints 480/360 em `/presentear/:id` — padding de página & card cedem largura p/ o Brick caber inteiro no celular|V36,B10
+T32|x|`buildPaymentBody()` em `lib/mp/payment-body.ts` — pix `date_of_expiration` 30 min + `transaction_amount` do servidor + teste|V37,V41,B11,B13
+T33|x|`mapPaymentStatus()` em `lib/mp/status.ts` usado por webhook & process-payment; process-payment devolve status mapeado + teste|V38,B12,B14
+T34|x|`additional_info` (items + payer) no body do `payments.create` + teste|V39
+T35|x|remover `mpPreference().create` de `/api/preference` & `preferenceId` do client|V30,V40,I.api
 ```
 
 ## §B — Bugs
@@ -163,4 +172,8 @@ B7|2026-09-14|`status_detail` do MP descartado em `/api/process-payment` → tod
 B8|2026-09-14|`onSubmit` era `async` c/ catch que engolia o erro ∴ sempre resolvia; Brick tratava recusa como sucesso e a única saída era `location.reload()`, perdendo os dados do cartão|V32,T28
 B9|2026-09-15|props do `<Payment>` eram literais inline ∴ nova identidade a cada render; `setStatus("submitting")` dentro do `onSubmit` disparava o cleanup do wrapper (`paymentBrickController.unmount()`) e reinit 200ms depois → formulário voltava zerado no meio do POST; ao resolver, o `router.push` (ou o reject) caía num Brick já descartado → "confirma do nada ou erro do sistema"; sem V35, nada sinalizava a espera|V34,V35,T30
 B10|2026-09-15|padding fixo de desktop (16px página + 32px card) deixava só 222px de largura útil num viewport de 320 (262 em 360), contra os ~282px que o Brick pede ∴ 48–61px de cada campo ficavam fora da área visível e fora do alcance do toque — CPF e e-mail, que ficam mais à direita, eram os mais cortados; medido em `#paymentBrick_container` (clientWidth 222 vs scrollWidth 282)|V36,T31
+B11|2026-10-14|pix criado sem `date_of_expiration` → default MP 24h → PixPanel conta "1439 : 59" & 2 convidados têm 1 dia p/ pagar o mesmo último slot (`pending` ⊥ conta em `claimed`)|V37,T32
+B12|2026-10-14|webhook mapeava todo status ∉ {approved, rejected} → `pending` ∴ estorno (`refunded`) ou chargeback de compra aprovada voltava a `pending` e pix expirado (`cancelled`) ficava `pending` p/ sempre — admin mostra "aguardando" em pagamento morto|V38,T33
+B13|2026-10-14|`/api/process-payment` espalhava `formData` do Brick no body ∴ `transaction_amount` vinha do browser — request adulterado pagava qualquer valor e o webhook marcava o presente como dado|V41,T32
+B14|2026-10-14|`/api/process-payment` devolvia o status cru do MP; cartão em análise volta `in_process` (⊥ `pending`) → client caía no ramo de recusa, mostrava erro e o convidado podia pagar de novo|V38,T33
 ```

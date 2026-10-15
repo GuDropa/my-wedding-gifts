@@ -1,10 +1,10 @@
 /**
  * Cliente Mercado Pago server-side. V22: ACCESS_TOKEN ⊥ no client.
- * Bricks aceitam preferenceId (criado server-side) e/ou processam payment
- * direto via `payments.create` chamado pelo nosso `onSubmit` handler.
+ * O Brick processa o payment direto via `payments.create`, chamado pelo nosso
+ * `onSubmit` handler — V40: ⊥ Preference.
  */
 import "server-only";
-import { MercadoPagoConfig, Payment, Preference } from "mercadopago";
+import { MercadoPagoConfig, Payment } from "mercadopago";
 
 const token = process.env.MP_ACCESS_TOKEN;
 
@@ -19,10 +19,6 @@ function client(): MercadoPagoConfig {
     options: { timeout: 10_000 },
   });
   return _client;
-}
-
-export function mpPreference(): Preference {
-  return new Preference(client());
 }
 
 export function mpPayment(): Payment {

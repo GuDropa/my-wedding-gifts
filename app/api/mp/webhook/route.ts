@@ -2,10 +2,12 @@
  * POST /api/mp/webhook ← Mercado Pago
  * V12: valida x-signature antes de mutar. V3/V13: upsert Purchases por MPPaymentId.
  * V24: invalida cache de gifts após mutação (rollup ClaimedCount muda).
+ * V38: estorno, chargeback e pix expirado viram `rejected` via `mapPaymentStatus`.
  */
 import { NextResponse } from "next/server";
 import { verifyMPSignature } from "@/lib/mp/webhook";
 import { mpPayment, mpConfigured } from "@/lib/mp/client";
+import { mapPaymentStatus } from "@/lib/mp/status";
 
 export async function POST(req: Request) {
   const signature = req.headers.get("x-signature");
@@ -69,8 +71,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, note: "purchase ausente" });
   }
 
-  const mapped: "approved" | "rejected" | "pending" =
-    status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending";
+  const mapped = mapPaymentStatus(status);
 
   // V13: idempotência — se já está no status final, no-op
   if (purchase.Status === mapped) {

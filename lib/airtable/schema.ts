@@ -52,7 +52,7 @@ export interface PurchaseFields {
   AmountCents: number;
   CreatedAt: string;
   ConfirmedAt?: string;
-  /** chave única de idempotência (V13): `${guestId}:${giftId}:${preferenceId}` */
+  /** chave única de idempotência (V13) = externalReference: `${guestKey}:${giftId}:${uuid}` */
   IdempotencyKey: string;
 }
 

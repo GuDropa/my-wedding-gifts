@@ -6,14 +6,17 @@
  *   1. V1: requer sessão.
  *   2. V3a: re-checar `claimed < limit` ANTES de criar payment (anti-race).
  *   3. V13: criar Purchase pending com IdempotencyKey = externalReference.
- *   4. V22: payments.create server-side (ACCESS_TOKEN só aqui).
- *   5. Update Purchase status conforme retorno (approved | rejected | pending).
- *   6. Retorna {status, paymentId} p/ Brick mostrar Status Screen.
+ *   4. V22: payments.create server-side (ACCESS_TOKEN só aqui); body de
+ *      `buildPaymentBody` — valor do servidor (V41), pix 30 min (V37), additional_info (V39).
+ *   5. Update Purchase status conforme retorno, via `mapPaymentStatus` (V38).
+ *   6. Retorna {status mapeado, paymentId, statusDetail, pix?} p/ o client.
  */
 import { NextResponse } from "next/server";
 import { getGuestSession } from "@/lib/session";
 import { getGift } from "@/lib/get-gifts";
 import { mpPayment, mpConfigured, mockAllowed } from "@/lib/mp/client";
+import { buildPaymentBody } from "@/lib/mp/payment-body";
+import { mapPaymentStatus } from "@/lib/mp/status";
 
 export async function POST(req: Request) {
   const session = await getGuestSession();
@@ -130,26 +133,23 @@ export async function POST(req: Request) {
 
   try {
     const result = await mpPayment().create({
-      body: {
-        ...(paymentData as object),
-        external_reference: externalReference,
-        statement_descriptor: "GG Casamento",
-        description: `Presente: ${gift.name}`,
-        metadata: {
-          guest_key: session.guestKey,
-          gift_id: gift.id,
-        },
-      },
+      body: buildPaymentBody({
+        formData: paymentData,
+        gift,
+        guestName: session.name,
+        guestKey: session.guestKey,
+        externalReference,
+      }),
     });
 
-    const status = (result.status ?? "pending") as "approved" | "rejected" | "pending" | string;
+    // V38/B14: o client só conhece approved | pending | rejected — `in_process`
+    // (cartão em análise) cru caía no ramo de recusa e convidava a pagar de novo.
+    const status = mapPaymentStatus(result.status);
     const paymentId = String(result.id ?? "");
 
     if (hasAirtable && purchaseRecordId) {
       const { updatePurchaseStatus } = await import("@/lib/airtable/client");
-      const mapped: "approved" | "rejected" | "pending" =
-        status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending";
-      await updatePurchaseStatus(purchaseRecordId, mapped, paymentId);
+      await updatePurchaseStatus(purchaseRecordId, status, paymentId);
     }
 
     // V28: pix nasce `pending` e o QR vem em `point_of_interaction.transaction_data`.

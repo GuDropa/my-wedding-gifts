@@ -1,12 +1,14 @@
 /**
- * POST /api/preference {giftId} → 200 {preferenceId, publicKey, amount, giftName}
- * V1: requer sessão. V22: ACCESS_TOKEN só server. V21: amount = priceCents/100.
- * V14: bloqueia se sold-out.
+ * POST /api/preference {giftId} → 200 {publicKey, amount, giftName, externalReference, mock?}
+ * Prepara o checkout: sold-out check + `externalReference` (IdempotencyKey da Purchase).
+ * V40: ⊥ cria MP Preference — o pagamento nasce no nosso backend (V30), então
+ * a Preference era só uma chamada ao MP sem uso a cada abertura da tela.
+ * V1: requer sessão. V21: amount = priceCents/100. V14: bloqueia se sold-out.
  */
 import { NextResponse } from "next/server";
 import { getGuestSession } from "@/lib/session";
 import { getGift } from "@/lib/get-gifts";
-import { mpPreference, mpConfigured, mockAllowed } from "@/lib/mp/client";
+import { mpConfigured, mockAllowed } from "@/lib/mp/client";
 import { randomUUID } from "node:crypto";
 
 export async function POST(req: Request) {
@@ -43,49 +45,12 @@ export async function POST(req: Request) {
     );
   }
 
-  // Modo dev / sem MP configurado → devolve preferenceId mock p/ a UI seguir
-  if (!mpConfigured()) {
-    return NextResponse.json({
-      preferenceId: `MOCK-${externalReference}`,
-      publicKey,
-      amount: gift.priceCents / 100,
-      giftName: gift.name,
-      externalReference,
-      mock: true,
-    });
-  }
-
-  try {
-    const pref = await mpPreference().create({
-      body: {
-        items: [
-          {
-            id: gift.id,
-            title: `Presente: ${gift.name}`,
-            description: `De ${session.name} para Gabriely & Gustavo`,
-            quantity: 1,
-            unit_price: gift.priceCents / 100,
-            currency_id: "BRL",
-          },
-        ],
-        payer: { name: session.name },
-        external_reference: externalReference,
-        statement_descriptor: "GG Casamento",
-        payment_methods: {
-          excluded_payment_types: [{ id: "ticket" }, { id: "atm" }],
-        },
-      },
-    });
-
-    return NextResponse.json({
-      preferenceId: pref.id,
-      publicKey,
-      amount: gift.priceCents / 100,
-      giftName: gift.name,
-      externalReference,
-    });
-  } catch (err) {
-    console.error("[/api/preference]", err);
-    return NextResponse.json({ error: "Não foi possível criar a preferência" }, { status: 500 });
-  }
+  // Modo dev / sem MP configurado → `mock` p/ a UI mostrar o botão de simular
+  return NextResponse.json({
+    publicKey,
+    amount: gift.priceCents / 100,
+    giftName: gift.name,
+    externalReference,
+    ...(mpConfigured() ? {} : { mock: true }),
+  });
 }
