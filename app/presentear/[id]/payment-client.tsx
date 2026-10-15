@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import { Heart } from "lucide-react";
 import { PixPanel, type PixData } from "@/components/PixPanel";
-import { paymentErrorCopy } from "@/lib/mp/status-detail";
+import { Toast, type ToastData } from "@/components/Toast";
+import { paymentRejection, type PaymentFeedback } from "@/lib/mp/status-detail";
 import styles from "./presentear.module.css";
 
 interface Props {
@@ -23,14 +24,21 @@ type Status = "loading" | "ready" | "submitting" | "error";
 // Types derivados do próprio componente — o pacote ⊥ reexporta os dele.
 type PaymentProps = ComponentProps<typeof Payment>;
 type PaymentFormData = Parameters<PaymentProps["onSubmit"]>[0];
+type BrickError = Parameters<NonNullable<PaymentProps["onError"]>>[0];
+
+const FALHA_GENERICA: PaymentFeedback = {
+  title: "Não conseguimos concluir",
+  message: "Não conseguimos concluir esse pagamento. Tente de novo ♥",
+};
 
 export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }: Props) {
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
   const [pref, setPref] = useState<{ externalReference: string; mock?: boolean } | null>(null);
   const [pix, setPix] = useState<PixData | null>(null);
-  // Recusa é recuperável: mensagem acima do Brick, formulário preservado.
-  const [notice, setNotice] = useState<string | null>(null);
+  // Recusa é recuperável: toast fixo na viewport (V43), formulário preservado.
+  const [toast, setToast] = useState<ToastData | null>(null);
+  const toastSeq = useRef(0);
   // Doc oficial: onReady sinaliza que o Brick terminou de montar — até lá o
   // nosso loader fica de pé, senão sobra uma área vazia piscando.
   const [brickReady, setBrickReady] = useState(false);
@@ -39,10 +47,45 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
   // V34: `pref` chega depois da 1ª render; lido por ref p/ manter `onSubmit`
   // estável — como dep, ele remontaria o Brick e zeraria o formulário.
   const prefRef = useRef(pref);
+  // V44: troca de referência em andamento — o próximo submit espera por ela.
+  const renewing = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     prefRef.current = pref;
   }, [pref]);
+
+  const showToast = useCallback((tone: ToastData["tone"], { title, message }: PaymentFeedback) => {
+    toastSeq.current += 1;
+    setToast({ id: toastSeq.current, tone, title, message });
+  }, []);
+
+  const closeToast = useCallback(() => setToast(null), []);
+
+  // V44/B16: `externalReference` é a IdempotencyKey da Purchase. Depois de uma
+  // falha ela já está gasta — reenviá-la fazia `/api/process-payment` devolver o
+  // `rejected` antigo sem nem chamar o MP, e toda nova tentativa "recusava".
+  const renewReference = useCallback(() => {
+    renewing.current = fetch("/api/preference", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ giftId }),
+    })
+      .then((res) => (res.ok ? (res.json() as Promise<{ externalReference?: string }>) : null))
+      .then((data) => {
+        const prev = prefRef.current;
+        if (!prev || !data?.externalReference) return;
+        // ref na hora: o submit que está esperando lê antes do próximo render
+        const next = { ...prev, externalReference: data.externalReference };
+        prefRef.current = next;
+        setPref(next);
+      })
+      .catch(() => {
+        // rede instável — o próximo submit segue c/ a referência antiga
+      })
+      .finally(() => {
+        renewing.current = null;
+      });
+  }, [giftId]);
 
   useEffect(() => {
     if (mountedOnce.current) return;
@@ -141,14 +184,18 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
 
   const handleSubmit = useCallback(
     async ({ formData }: PaymentFormData) => {
-      const current = prefRef.current;
-      if (!current) return;
-      setNotice(null);
+      setToast(null);
       setStatus("submitting");
+      if (renewing.current) await renewing.current; // V44
+      const current = prefRef.current;
+      if (!current) {
+        setStatus("ready");
+        return;
+      }
       // Doc oficial do Payment Brick: o onSubmit devolve Promise — resolve em
       // sucesso, reject em falha. Rejeitar é o que faz o Brick PRESERVAR o
       // formulário preenchido p/ o convidado corrigir e tentar de novo.
-      let motivo = "Não conseguimos concluir esse pagamento. Tente de novo ♥";
+      let aviso = FALHA_GENERICA;
       try {
         const res = await fetch("/api/process-payment", {
           method: "POST",
@@ -171,8 +218,8 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
           pix?: PixData;
         };
         if (!res.ok) {
-          motivo = j.error ?? motivo;
-          throw new Error(motivo);
+          aviso = { ...aviso, message: j.error ?? aviso.message };
+          throw new Error(aviso.message);
         }
         // V28: pix pendente ainda ⊥ foi pago — mostra QR em vez de agradecer.
         if (j.pix) {
@@ -180,27 +227,35 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
           return; // resolve — o PixPanel assume a tela
         }
         if (j.status === "approved" || j.status === "pending") {
+          // V42: cartão em análise (CONT → pending_contingency) leva o motivo p/ `/obrigado`.
+          const detail =
+            j.status === "pending" && j.statusDetail ? `&d=${encodeURIComponent(j.statusDetail)}` : "";
           router.push(
-            `/obrigado?p=${encodeURIComponent(j.paymentId ?? "")}&g=${encodeURIComponent(giftName)}&s=${j.status}`,
+            `/obrigado?p=${encodeURIComponent(j.paymentId ?? "")}&g=${encodeURIComponent(giftName)}&s=${j.status}${detail}`,
           );
           return; // resolve — overlay segue de pé até a navegação
         }
-        // V31/B7: motivo concreto em vez de "não aprovado" seco.
-        motivo = paymentErrorCopy(j.statusDetail);
-        throw new Error(motivo);
+        // V31/V42: o MP recusa c/ HTTP 200 — só `status`/`statusDetail` dizem o porquê.
+        aviso = paymentRejection(j.statusDetail);
+        throw new Error(aviso.message);
       } catch (err) {
-        setNotice(motivo);
+        showToast("error", aviso);
         setStatus("ready");
+        renewReference(); // V44: a referência desta tentativa já foi gasta
         throw err; // reject — Brick mantém o formulário, ⊥ precisa recarregar
       }
     },
-    [giftId, giftName, router],
+    [giftId, giftName, router, showToast, renewReference],
   );
 
   const handleReady = useCallback(() => setBrickReady(true), []);
 
-  const handleError = useCallback((err: unknown) => {
+  // V45/B17: só erro `critical` impede o Brick de seguir. `non_critical` (ex.:
+  // cartão sem meio de pagamento p/ o BIN) o próprio Brick mostra no campo —
+  // derrubar o formulário inteiro jogava fora o que o convidado já digitou.
+  const handleError = useCallback((err: BrickError) => {
     console.error("[Brick error]", err);
+    if (err?.type !== "critical") return;
     setError("Erro no processamento. Tente novamente.");
     setStatus("error");
   }, []);
@@ -259,11 +314,7 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
           <span>Preparando seu presente...</span>
         </div>
       )}
-      {notice && (
-        <p className={styles.notice} role="alert">
-          {notice}
-        </p>
-      )}
+      <Toast toast={toast} onClose={closeToast} />
       <div className={styles.brickStage}>
         {/* V35: MP + Airtable levam segundos — o convidado precisa ver que algo
             está acontecendo, e ⊥ conseguir clicar de novo enquanto isso. */}

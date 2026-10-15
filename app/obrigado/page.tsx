@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getGuestSession } from "@/lib/session";
 import { FloralCorners } from "@/components/FloralCorners";
 import { Frame } from "@/components/Frame";
+import { pendingNote } from "@/lib/mp/status-detail";
 import { Petals } from "./petals";
 import styles from "./obrigado.module.css";
 
@@ -10,14 +11,16 @@ export const dynamic = "force-dynamic";
 export default async function ObrigadoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ p?: string; g?: string; s?: string }>;
+  searchParams: Promise<{ p?: string; g?: string; s?: string; d?: string }>;
 }) {
   const session = await getGuestSession();
   if (!session) redirect("/");
 
-  const { g, s } = await searchParams;
+  const { g, s, d } = await searchParams;
   const giftName = g ?? "esse presente";
   const status = s ?? "approved";
+  // V42: cartão em análise (ex.: CONT → pending_contingency) explica o que falta.
+  const note = status === "pending" ? pendingNote(d) : null;
   const first = session.name.split(" ")[0];
 
   return (
@@ -40,8 +43,9 @@ export default async function ObrigadoPage({
               {status === "pending" ? (
                 <>
                   Recebemos seu presente <em>{giftName}</em> e estamos só esperando
-                  a confirmação do pagamento. Assim que tudo for aprovado, ele entra
-                  oficialmente na nossa história. Obrigado, de verdade, por estar com a gente.
+                  a confirmação do pagamento.{note && <> {note}</>} Assim que tudo for
+                  aprovado, ele entra oficialmente na nossa história. Obrigado, de verdade,
+                  por estar com a gente.
                 </>
               ) : (
                 <>

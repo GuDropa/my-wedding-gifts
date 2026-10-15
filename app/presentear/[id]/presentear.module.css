@@ -152,30 +152,6 @@
 .mockCta:hover:not(:disabled) { background: var(--olive-deep); }
 .mockCta:disabled { opacity: 0.6; cursor: progress; }
 
-/* Recusa recuperável — fica acima do Brick, que segue montado. */
-.notice {
-  margin: 0 0 var(--sp-4);
-  padding: var(--sp-3) var(--sp-4);
-  background: var(--paper-soft);
-  border: 1px solid var(--danger);
-  border-radius: var(--r-sm);
-  color: var(--danger);
-  font-family: var(--font-sans-stack);
-  font-size: 13px;
-  line-height: 1.5;
-  text-align: center;
-  animation: noticeIn var(--dur) var(--ease) both;
-}
-
-@keyframes noticeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .notice { animation: none; }
-}
-
 /* Palco do Brick — ancora o overlay de "confirmando". V35. */
 .brickStage {
   position: relative;

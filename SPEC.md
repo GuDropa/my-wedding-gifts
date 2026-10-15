@@ -115,6 +115,10 @@ Web app privado p/ casamento de Gabriely & Gustavo (21 / 11 / 2026, Espaço Eden
 - V39: `payments.create` ! levar `additional_info.items` [{id,title,description,quantity,unit_price}] & `additional_info.payer` {first_name,last_name do convidado} — aprovação de cartão & nota de qualidade MP; ⊥ sobrescrever `payer` que o Brick preencheu
 - V40: ⊥ criar MP Preference — pagamento é criado no backend (V30) ∴ Preference = chamada morta + latência em toda abertura de `/presentear/:id`
 - V41: `transaction_amount` ! = `gift.priceCents/100` do servidor — ⊥ confiar no valor do `formData` do Brick (cliente pode adulterar e pagar menos)
+- V42: MP recusa c/ HTTP 200 — só `status`/`statusDetail` dizem o resultado. `lib/mp/status-detail.ts` ! cobrir ∀ `status_detail` da tabela da doc MP ("Consulta sobre o status de um pagamento"): recusa → `paymentRejection()` {title,message} p/ toast; pendência de cartão (`pending_contingency` = CONT, `pending_review_manual`…) → `pendingNote()` em `/obrigado?s=pending&d=<statusDetail>`
+- V43: aviso de falha no pagamento ! toast fixo na viewport (`components/Toast`, portal em `body`, `role=alert`) — ⊥ aviso inline acima do Brick, que fica fora da tela de quem tocou em "Pagar"
+- V44: falha no submit → client ! pedir nova `externalReference` (`/api/preference`) antes do próximo envio — a anterior já é IdempotencyKey de uma Purchase (V13); reusar devolve o resultado antigo sem nova tentativa no MP
+- V45: `onError` do Brick ! derrubar o formulário só em `type=critical`; `non_critical` o Brick mostra no próprio campo
 
 ## §T — Tasks
 
@@ -156,6 +160,9 @@ T32|x|`buildPaymentBody()` em `lib/mp/payment-body.ts` — pix `date_of_expirati
 T33|x|`mapPaymentStatus()` em `lib/mp/status.ts` usado por webhook & process-payment; process-payment devolve status mapeado + teste|V38,B12,B14
 T34|x|`additional_info` (items + payer) no body do `payments.create` + teste|V39
 T35|x|remover `mpPreference().create` de `/api/preference` & `preferenceId` do client|V30,V40,I.api
+T36|x|mapear ∀ `status_detail` da doc MP (`paymentRejection`, `pendingNote`) + teste c/ cartões de teste OTHE/CONT/CALL/FUND/SECU/EXPI/FORM|V31,V42,B15
+T37|x|`components/Toast` + toast de recusa em `/presentear/:id` (substitui `.notice` inline); CONT → `/obrigado` c/ nota de análise|V43,V17,V20,B15
+T38|x|renovar `externalReference` após falha no submit; `onError` só derruba Brick em `critical`|V44,V45,B16,B17
 ```
 
 ## §B — Bugs
@@ -176,4 +183,7 @@ B11|2026-10-14|pix criado sem `date_of_expiration` → default MP 24h → PixPan
 B12|2026-10-14|webhook mapeava todo status ∉ {approved, rejected} → `pending` ∴ estorno (`refunded`) ou chargeback de compra aprovada voltava a `pending` e pix expirado (`cancelled`) ficava `pending` p/ sempre — admin mostra "aguardando" em pagamento morto|V38,T33
 B13|2026-10-14|`/api/process-payment` espalhava `formData` do Brick no body ∴ `transaction_amount` vinha do browser — request adulterado pagava qualquer valor e o webhook marcava o presente como dado|V41,T32
 B14|2026-10-14|`/api/process-payment` devolvia o status cru do MP; cartão em análise volta `in_process` (⊥ `pending`) → client caía no ramo de recusa, mostrava erro e o convidado podia pagar de novo|V38,T33
+B15|2026-10-14|recusa do MP vem c/ HTTP 200 (`{status:"rejected", statusDetail:"cc_rejected_other_reason"}`); o aviso era um `<p>` inline acima do Brick → fora da viewport de quem está no botão "Pagar", recusa parecia "não fazer nada"; mapa cobria só 14 dos 26 `status_detail` de recusa da doc|V42,V43,T36,T37
+B16|2026-10-14|`externalReference` reaproveitada após recusa → `/api/process-payment` achava a Purchase `rejected` pela IdempotencyKey e devolvia o `rejected` antigo (sem `statusDetail`) sem chamar o MP → toda nova tentativa "recusava" até recarregar a página|V44,T38
+B17|2026-10-14|`onError` do Brick tratava todo erro como fatal → erro `non_critical` (ex.: BIN sem meio de pagamento) trocava o formulário inteiro por "Erro no processamento" e jogava fora o que o convidado digitou|V45,T38
 ```
