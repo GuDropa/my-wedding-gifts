@@ -57,8 +57,7 @@ export default async function ObrigadoPage({
                 </>
               ) : (
                 <>
-                  Que alegria! Você acabou de nos presentear com <em>{giftName}</em>,
-                  e a gente já está sorrindo à toa.{" "}
+                  Que alegria! Você acabou de nos presentear com <em>{giftName}</em>.{" "}
                   {thankYou ??
                     "Seja na mala rumo a Buenos Aires ou na nossa casa nova, esse carinho vai junto com a gente."}{" "}
                   Obrigado por fazer parte da nossa história. Te esperamos no
