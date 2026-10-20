@@ -166,6 +166,7 @@ T38|x|renovar `externalReference` após falha no submit; `onError` só derruba B
 T39|x|copy alinhada à lista nova (lua de mel em Buenos Aires + casa nova + cotas): intro `/presentes`, nota `/obrigado` (aprovado c/ P.S., pendente), dica de pagamento, Pix expirado, meta description; seed espelha os 37 gifts ativos do Airtable; `fmtBRL` c/ ponto de milhar (`R$ 2.000,00`)|V5,V8,C12
 T40|x|`/admin/mensagens` — catálogo do que o convidado lê (agradecimento aprovado/pendente c/ link p/ `/obrigado` real, toasts de recusa disparáveis, Pix, esgotado); textos lidos das fontes (`status-detail`, `lib/pix-copy`, `GiftCard`); proxy libera `/obrigado` p/ sessão admin (prévia saúda "Convidado")|V5,V11,V43
 T41|x|`PresentesAdmin` importa `fmtBRL` direto (⊥ prop função)|B18
+T42|x|agradecimento por presente: campo `Gifts.ThankYou` (Airtable, 37 mensagens escritas) → `/obrigado?id=` usa no meio da nota, vazio → mensagem geral c/ P.S.; editável em `/admin/presentes`, prévia por presente em `/admin/mensagens`; checkout & PixPanel passam `id`|V5,V8
 ```
 
 ## §B — Bugs

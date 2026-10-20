@@ -31,6 +31,7 @@ export default async function AdminPresentesPage() {
           limit: g.limit,
           claimed: g.claimed,
           tint: g.tint,
+          thankYou: g.thankYou ?? "",
         }))}
         canEdit={hasAirtable}
       />

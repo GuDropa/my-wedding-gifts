@@ -18,6 +18,7 @@ export async function POST(req: Request) {
     priceCents?: number;
     limit?: number;
     tint?: string;
+    thankYou?: string;
   };
   const body = (await req.json().catch(() => ({}))) as Body;
   if (!body.name || !body.priceCents || !body.limit) {
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
         PriceCents: body.priceCents,
         Limit: body.limit,
         Tint: body.tint ?? "#E4E8DD",
+        ThankYou: body.thankYou ?? "",
         Active: true,
       },
     },

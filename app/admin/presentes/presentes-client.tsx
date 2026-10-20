@@ -14,6 +14,7 @@ interface AdminGift {
   limit: number;
   claimed: number;
   tint: string;
+  thankYou: string;
 }
 
 interface Props {
@@ -173,6 +174,7 @@ function GiftEditor({
     priceCents: gift?.priceCents ?? 0,
     limit: gift?.limit ?? 1,
     tint: gift?.tint ?? "#E4E8DD",
+    thankYou: gift?.thankYou ?? "",
   });
 
   return (
@@ -219,6 +221,16 @@ function GiftEditor({
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             rows={3}
+            style={{ ...inputStyle, resize: "vertical" }}
+          />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: "var(--sp-2)" }}>
+          <span className="ds-label">Agradecimento (depois da compra)</span>
+          <textarea
+            value={form.thankYou}
+            onChange={(e) => setForm({ ...form, thankYou: e.target.value })}
+            rows={3}
+            placeholder="Vazio = mensagem geral"
             style={{ ...inputStyle, resize: "vertical" }}
           />
         </label>

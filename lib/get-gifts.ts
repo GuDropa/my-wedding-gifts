@@ -16,6 +16,8 @@ export interface PublicGift {
   photo?: string | null;
   tint: string;
   soldOut: boolean;
+  /** Agradecimento personalizado em `/obrigado`; null → mensagem geral. */
+  thankYou: string | null;
 }
 
 function fromSeed(): PublicGift[] {
@@ -30,6 +32,7 @@ function fromSeed(): PublicGift[] {
     photo: null,
     tint: g.Tint ?? "#E4E8DD",
     soldOut: false,
+    thankYou: g.ThankYou ?? null,
   }));
 }
 
@@ -60,6 +63,7 @@ export async function getGifts(): Promise<PublicGift[]> {
         photo,
         tint: g.Tint ?? "#E4E8DD",
         soldOut: claimed >= g.Limit,
+        thankYou: g.ThankYou?.trim() || null,
       };
     });
   } catch (err) {

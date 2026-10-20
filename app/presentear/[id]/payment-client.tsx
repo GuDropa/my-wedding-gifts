@@ -137,7 +137,7 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
       const j = (await res.json()) as { status?: string; paymentId?: string; error?: string };
       if (!res.ok) throw new Error(j.error ?? "Erro");
       if (j.status === "approved") {
-        router.push(`/obrigado?p=${encodeURIComponent(j.paymentId ?? "")}&g=${encodeURIComponent(giftName)}`);
+        router.push(`/obrigado?p=${encodeURIComponent(j.paymentId ?? "")}&id=${encodeURIComponent(giftId)}&g=${encodeURIComponent(giftName)}`);
       } else {
         setError(`Pagamento ${j.status ?? "não aprovado"}`);
         setStatus("error");
@@ -226,7 +226,7 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
           const detail =
             j.status === "pending" && j.statusDetail ? `&d=${encodeURIComponent(j.statusDetail)}` : "";
           router.push(
-            `/obrigado?p=${encodeURIComponent(j.paymentId ?? "")}&g=${encodeURIComponent(giftName)}&s=${j.status}${detail}`,
+            `/obrigado?p=${encodeURIComponent(j.paymentId ?? "")}&id=${encodeURIComponent(giftId)}&g=${encodeURIComponent(giftName)}&s=${j.status}${detail}`,
           );
           return; // resolve — overlay segue de pé até a navegação
         }
@@ -277,7 +277,7 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
 
   if (pix && pref) {
     return (
-      <PixPanel pix={pix} externalReference={pref.externalReference} giftName={giftName} />
+      <PixPanel pix={pix} externalReference={pref.externalReference} giftId={giftId} giftName={giftName} />
     );
   }
 

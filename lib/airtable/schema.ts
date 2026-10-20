@@ -34,6 +34,8 @@ export interface GiftFields {
   Photo?: { url: string }[];
   Tint?: string;
   Active: boolean;
+  /** Agradecimento do presente em `/obrigado` — vazio usa a mensagem geral. */
+  ThankYou?: string;
 }
 
 /** Status válidos de uma compra. */
@@ -84,6 +86,7 @@ export const TABLE_DEFS = [
       { name: "Photo", type: "multipleAttachments" },
       { name: "Tint", type: "singleLineText" },
       { name: "Active", type: "checkbox", options: { color: "greenBright", icon: "check" } },
+      { name: "ThankYou", type: "multilineText" },
       // ClaimedCount é rollup — adicionado em segundo passo após criar Purchases
     ],
   },

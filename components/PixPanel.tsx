@@ -23,12 +23,13 @@ export interface PixData {
 interface Props {
   pix: PixData;
   externalReference: string;
+  giftId: string;
   giftName: string;
 }
 
 const POLL_MS = 4000;
 
-export function PixPanel({ pix, externalReference, giftName }: Props) {
+export function PixPanel({ pix, externalReference, giftId, giftName }: Props) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [expired, setExpired] = useState(false);
@@ -72,7 +73,7 @@ export function PixPanel({ pix, externalReference, giftName }: Props) {
         if (!alive) return;
         if (j.status === "approved") {
           clearInterval(id);
-          router.push(`/obrigado?g=${encodeURIComponent(giftName)}&s=approved`);
+          router.push(`/obrigado?id=${encodeURIComponent(giftId)}&g=${encodeURIComponent(giftName)}&s=approved`);
         } else if (j.status === "rejected") {
           clearInterval(id);
           setRejected(true);
@@ -86,7 +87,7 @@ export function PixPanel({ pix, externalReference, giftName }: Props) {
       alive = false;
       clearInterval(id);
     };
-  }, [externalReference, giftName, router, expired, rejected]);
+  }, [externalReference, giftId, giftName, router, expired, rejected]);
 
   const copy = useCallback(async () => {
     if (!pix.qrCode) return;

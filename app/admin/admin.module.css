@@ -247,6 +247,16 @@
   color: var(--ink);
   max-width: 100%;
 }
+.msgHint {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.msgHint a { color: var(--olive); text-decoration: underline; }
+.msgFallback { color: var(--ink-faint); }
 .msgKind {
   width: 220px;
   font-weight: 600;

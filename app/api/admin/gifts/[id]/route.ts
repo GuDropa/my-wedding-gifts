@@ -21,6 +21,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     priceCents?: number;
     limit?: number;
     tint?: string;
+    thankYou?: string;
   };
   const body = (await req.json().catch(() => ({}))) as Body;
 
@@ -34,6 +35,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (body.priceCents !== undefined) fields.PriceCents = body.priceCents;
   if (body.limit !== undefined) fields.Limit = body.limit;
   if (body.tint !== undefined) fields.Tint = body.tint;
+  if (body.thankYou !== undefined) fields.ThankYou = body.thankYou;
 
   await at(TABLES.gifts).update([{ id, fields }]);
 

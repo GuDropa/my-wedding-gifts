@@ -22,20 +22,19 @@ export const dynamic = "force-dynamic";
 export default async function AdminMensagensPage({
   searchParams,
 }: {
-  searchParams: Promise<{ g?: string }>;
+  searchParams: Promise<{ id?: string }>;
 }) {
   const s = await getAdminSession();
   if (!s) redirect("/admin/login");
 
   const gifts = await getGifts();
-  const { g } = await searchParams;
-  const giftName = g ?? gifts[0]?.name ?? "esse presente";
+  const { id } = await searchParams;
+  const selected = gifts.find((gift) => gift.id === id) ?? gifts[0];
 
-  const obrigado = (status: string, detail?: string) =>
-    `/obrigado?g=${encodeURIComponent(giftName)}&s=${status}${detail ? `&d=${detail}` : ""}`;
+  const obrigado = (status: string, detail?: string, giftId = selected?.id ?? "") =>
+    `/obrigado?id=${encodeURIComponent(giftId)}&s=${status}${detail ? `&d=${detail}` : ""}`;
 
   const thanks = [
-    { label: "Pagamento aprovado", text: "Nota de agradecimento com P.S.", href: obrigado("approved") },
     { label: "Pendente", text: "Sem motivo específico do Mercado Pago", href: obrigado("pending") },
     ...PENDING_CODES.map((code) => ({
       label: "Pendente",
@@ -68,14 +67,45 @@ export default async function AdminMensagensPage({
       </header>
 
       <section className={styles.bucket}>
-        <header className={styles.bucketHeader}>Depois da compra</header>
+        <header className={styles.bucketHeader}>Agradecimento por presente (pagamento aprovado)</header>
+        <p className={styles.msgHint}>
+          Cada mensagem entra no meio da nota, entre a abertura e o fechamento. Para mudar,
+          edite o presente em <a href="/admin/presentes">Presentes</a> ou o campo ThankYou no
+          Airtable. Sem mensagem própria, o presente usa a geral (com P.S. da lua de mel).
+        </p>
+        <table className={styles.table}>
+          <tbody>
+            {gifts.map((gift) => (
+              <tr key={gift.id}>
+                <td className={styles.msgKind}>{gift.name}</td>
+                <td className={styles.msgText}>
+                  {gift.thankYou ?? <em className={styles.msgFallback}>Usa a mensagem geral</em>}
+                </td>
+                <td className={styles.msgAction}>
+                  <a
+                    href={obrigado("approved", undefined, gift.id)}
+                    target="_blank"
+                    rel="noopener"
+                    className={styles.btn}
+                  >
+                    Abrir
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className={styles.bucket}>
+        <header className={styles.bucketHeader}>Pagamento pendente</header>
         <form method="get" className={styles.msgForm}>
           <label htmlFor="msg-gift" className={styles.msgLabel}>
             Presente usado na prévia
           </label>
-          <select id="msg-gift" name="g" defaultValue={giftName} className={styles.msgSelect}>
+          <select id="msg-gift" name="id" defaultValue={selected?.id} className={styles.msgSelect}>
             {gifts.map((gift) => (
-              <option key={gift.id} value={gift.name}>
+              <option key={gift.id} value={gift.id}>
                 {gift.name}
               </option>
             ))}
