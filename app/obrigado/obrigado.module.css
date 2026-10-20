@@ -60,6 +60,19 @@
   margin: var(--sp-4) 0 var(--sp-5);
 }
 
+/* Um parágrafo por ideia: abertura, agradecimento, fechamento. */
+.body p {
+  margin: 0;
+}
+.body p + p {
+  margin-top: var(--sp-3);
+}
+
+/* ⊥ quebrar a data no meio ("21 / 11 /" ↵ "2026") */
+.date {
+  white-space: nowrap;
+}
+
 .body em {
   color: var(--olive-deep);
   font-style: italic;

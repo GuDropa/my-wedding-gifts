@@ -46,25 +46,36 @@ export default async function ObrigadoPage({
               {first},
             </h1>
 
-            <p className={`${styles.body} ${styles.writeIn}`}>
+            <div className={`${styles.body} ${styles.writeIn}`}>
               {status === "pending" ? (
                 <>
-                  Recebemos seu presente <em>{giftName}</em>! Agora só falta a
-                  confirmação.{note && <> {note}</>} Assim que aprovar,
-                  ele entra oficialmente na nossa história, seja na mala rumo a
-                  Buenos Aires ou na nossa casa nova. Obrigado, de verdade, por
-                  estar com a gente.
+                  <p>
+                    Recebemos seu presente <em>{giftName}</em>! Agora só falta a
+                    confirmação.{note && <> {note}</>}
+                  </p>
+                  <p>
+                    Assim que aprovar, ele entra oficialmente na nossa história,
+                    seja na mala rumo a Buenos Aires ou na nossa casa nova.
+                  </p>
+                  <p>Obrigado, de verdade, por estar com a gente.</p>
                 </>
               ) : (
                 <>
-                  Que alegria! Você acabou de nos presentear com <em>{giftName}</em>.{" "}
-                  {thankYou ??
-                    "Seja na mala rumo a Buenos Aires ou na nossa casa nova, esse carinho vai junto com a gente."}{" "}
-                  Obrigado por fazer parte da nossa história. Te esperamos no
-                  dia <strong>21 / 11 / 2026</strong> pra celebrar juntos.
+                  <p>
+                    Que alegria! Você acabou de nos presentear com <em>{giftName}</em>.
+                  </p>
+                  <p>
+                    {thankYou ??
+                      "Seja na mala rumo a Buenos Aires ou na nossa casa nova, esse carinho vai junto com a gente."}
+                  </p>
+                  <p>
+                    Obrigado por fazer parte da nossa história. Te esperamos no
+                    dia <strong className={styles.date}>21 / 11 / 2026</strong> pra
+                    celebrar juntos.
+                  </p>
                 </>
               )}
-            </p>
+            </div>
 
             {/* P.S. geral só quando o presente ⊥ tem agradecimento próprio */}
             {status !== "pending" && !thankYou && (
