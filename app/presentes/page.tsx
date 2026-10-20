@@ -30,8 +30,9 @@ export default async function PresentesPage() {
           Escolha um presente, <span className={styles.italic}>com carinho</span>
         </h1>
         <p className={`ds-body ${styles.intro__body}`}>
-          Cada item daqui ajuda a montar a nossa casa e os nossos primeiros dias
-          juntos. Não se preocupe com valor — o seu carinho já é tudo ♥
+          Tem um pouco de tudo: a lua de mel em Buenos Aires, a casa nova e
+          algumas cotas pra sonhos maiores. Escolha o que tiver a sua cara e não
+          se preocupe com valor, o seu carinho já é tudo ♥
         </p>
         <div className={styles.divider} aria-hidden>
           <Image

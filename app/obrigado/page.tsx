@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getGuestSession } from "@/lib/session";
+import { getAdminSession } from "@/lib/admin-session";
 import { FloralCorners } from "@/components/FloralCorners";
 import { Frame } from "@/components/Frame";
 import { pendingNote } from "@/lib/mp/status-detail";
@@ -14,14 +15,16 @@ export default async function ObrigadoPage({
   searchParams: Promise<{ p?: string; g?: string; s?: string; d?: string }>;
 }) {
   const session = await getGuestSession();
-  if (!session) redirect("/");
+  // Prévia do casal (`/admin/mensagens`): sem convidado, saúda um nome genérico.
+  const preview = session ? null : await getAdminSession();
+  if (!session && !preview) redirect("/");
 
   const { g, s, d } = await searchParams;
   const giftName = g ?? "esse presente";
   const status = s ?? "approved";
   // V42: cartão em análise (ex.: CONT → pending_contingency) explica o que falta.
   const note = status === "pending" ? pendingNote(d) : null;
-  const first = session.name.split(" ")[0];
+  const first = session ? session.name.split(" ")[0] : "Convidado";
 
   return (
     <main className={styles.page}>
@@ -42,20 +45,28 @@ export default async function ObrigadoPage({
             <p className={`${styles.body} ${styles.writeIn}`}>
               {status === "pending" ? (
                 <>
-                  Recebemos seu presente <em>{giftName}</em> e estamos só esperando
-                  a confirmação do pagamento.{note && <> {note}</>} Assim que tudo for
-                  aprovado, ele entra oficialmente na nossa história. Obrigado, de verdade,
-                  por estar com a gente.
+                  Recebemos seu presente <em>{giftName}</em>! Agora só falta a
+                  confirmação.{note && <> {note}</>} Assim que aprovar,
+                  ele entra oficialmente na nossa história, seja na mala rumo a
+                  Buenos Aires ou na nossa casa nova. Obrigado, de verdade, por
+                  estar com a gente.
                 </>
               ) : (
                 <>
-                  Seu carinho acaba de virar parte da nossa casa. Obrigado por nos
-                  presentear com <em>{giftName}</em> — e, mais do que isso, por
-                  caminhar com a gente até esse dia. Mal podemos esperar para
-                  celebrar você no dia <strong>21 / 11 / 2026</strong>.
+                  Que alegria! Você acabou de nos presentear com <em>{giftName}</em>,
+                  e a gente já está sorrindo à toa. Seja na mala rumo a Buenos Aires
+                  ou na nossa casa nova, esse carinho vai junto com a gente. Obrigado
+                  por fazer parte da nossa história. Te esperamos no
+                  dia <strong>21 / 11 / 2026</strong> pra celebrar juntos.
                 </>
               )}
             </p>
+
+            {status !== "pending" && (
+              <p className={`ds-body-sm ${styles.ps}`}>
+                P.S.: prometemos mandar notícias (e muitas fotos) da lua de mel.
+              </p>
+            )}
 
             <div className={styles.divider} aria-hidden />
 

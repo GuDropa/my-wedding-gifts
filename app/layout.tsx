@@ -20,7 +20,7 @@ const quicksand = Quicksand({
 export const metadata: Metadata = {
   title: "Gabriely & Gustavo · 21 / 11 / 2026",
   description:
-    "Nossa lista de presentes — com muito carinho, convidamos você a fazer parte do nosso casamento.",
+    "Da lua de mel em Buenos Aires à casa nova: nossa lista de presentes, feita com muito carinho pra você fazer parte do nosso casamento.",
   robots: { index: false, follow: false },
 };
 

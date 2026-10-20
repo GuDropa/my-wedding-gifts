@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/admin-session";
 import { getGifts } from "@/lib/get-gifts";
-import { fmtBRL } from "@/lib/fmt";
 import { PresentesAdmin } from "./presentes-client";
 import styles from "../admin.module.css";
 
@@ -34,7 +33,6 @@ export default async function AdminPresentesPage() {
           tint: g.tint,
         }))}
         canEdit={hasAirtable}
-        fmtPrice={(c) => fmtBRL(c)}
       />
     </div>
   );

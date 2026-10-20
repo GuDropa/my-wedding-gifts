@@ -10,7 +10,7 @@ import { fmtBRL } from "@/lib/fmt";
 import type { PublicGift } from "@/lib/get-gifts";
 import styles from "./GiftCard.module.css";
 
-const SOLD_OUT_COPY = "Esse presente já foi todo escolhido com carinho ♥";
+export const SOLD_OUT_COPY = "Esse presente já foi todo escolhido com carinho ♥";
 
 export function GiftCard({ gift }: { gift: PublicGift }) {
   const remaining = Math.max(0, gift.limit - gift.claimed);

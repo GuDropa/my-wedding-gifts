@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2, Plus } from "lucide-react";
+import { fmtBRL } from "@/lib/fmt";
 import styles from "../admin.module.css";
 
 interface AdminGift {
@@ -18,10 +19,9 @@ interface AdminGift {
 interface Props {
   initialGifts: AdminGift[];
   canEdit: boolean;
-  fmtPrice: (cents: number) => string;
 }
 
-export function PresentesAdmin({ initialGifts, canEdit, fmtPrice }: Props) {
+export function PresentesAdmin({ initialGifts, canEdit }: Props) {
   const [gifts, setGifts] = useState(initialGifts);
   const [editing, setEditing] = useState<AdminGift | null>(null);
   const [showNew, setShowNew] = useState(false);
@@ -102,7 +102,7 @@ export function PresentesAdmin({ initialGifts, canEdit, fmtPrice }: Props) {
                   {g.name}
                 </td>
                 <td style={{ color: "var(--ink-soft)", maxWidth: 320 }}>{g.description}</td>
-                <td style={{ fontVariantNumeric: "tabular-nums" }}>{fmtPrice(g.priceCents)}</td>
+                <td style={{ fontVariantNumeric: "tabular-nums" }}>{fmtBRL(g.priceCents)}</td>
                 <td>
                   <span className={`${styles.badge} ${soldOut ? styles.badgeOff : styles.badgeOk}`}>
                     {g.claimed} / {g.limit}

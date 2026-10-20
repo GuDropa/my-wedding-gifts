@@ -163,6 +163,9 @@ T35|x|remover `mpPreference().create` de `/api/preference` & `preferenceId` do c
 T36|x|mapear ∀ `status_detail` da doc MP (`paymentRejection`, `pendingNote`) + teste c/ cartões de teste OTHE/CONT/CALL/FUND/SECU/EXPI/FORM|V31,V42,B15
 T37|x|`components/Toast` + toast de recusa em `/presentear/:id` (substitui `.notice` inline); CONT → `/obrigado` c/ nota de análise|V43,V17,V20,B15
 T38|x|renovar `externalReference` após falha no submit; `onError` só derruba Brick em `critical`|V44,V45,B16,B17
+T39|x|copy alinhada à lista nova (lua de mel em Buenos Aires + casa nova + cotas): intro `/presentes`, nota `/obrigado` (aprovado c/ P.S., pendente), dica de pagamento, Pix expirado, meta description; seed espelha os 37 gifts ativos do Airtable; `fmtBRL` c/ ponto de milhar (`R$ 2.000,00`)|V5,V8,C12
+T40|x|`/admin/mensagens` — catálogo do que o convidado lê (agradecimento aprovado/pendente c/ link p/ `/obrigado` real, toasts de recusa disparáveis, Pix, esgotado); textos lidos das fontes (`status-detail`, `lib/pix-copy`, `GiftCard`); proxy libera `/obrigado` p/ sessão admin (prévia saúda "Convidado")|V5,V11,V43
+T41|x|`PresentesAdmin` importa `fmtBRL` direto (⊥ prop função)|B18
 ```
 
 ## §B — Bugs
@@ -186,4 +189,5 @@ B14|2026-10-14|`/api/process-payment` devolvia o status cru do MP; cartão em an
 B15|2026-10-14|recusa do MP vem c/ HTTP 200 (`{status:"rejected", statusDetail:"cc_rejected_other_reason"}`); o aviso era um `<p>` inline acima do Brick → fora da viewport de quem está no botão "Pagar", recusa parecia "não fazer nada"; mapa cobria só 14 dos 26 `status_detail` de recusa da doc|V42,V43,T36,T37
 B16|2026-10-14|`externalReference` reaproveitada após recusa → `/api/process-payment` achava a Purchase `rejected` pela IdempotencyKey e devolvia o `rejected` antigo (sem `statusDetail`) sem chamar o MP → toda nova tentativa "recusava" até recarregar a página|V44,T38
 B17|2026-10-14|`onError` do Brick tratava todo erro como fatal → erro `non_critical` (ex.: BIN sem meio de pagamento) trocava o formulário inteiro por "Erro no processamento" e jogava fora o que o convidado digitou|V45,T38
+B18|2026-10-20|`/admin/presentes` (server) passava `fmtPrice={(c) => fmtBRL(c)}` p/ `PresentesAdmin` (client) → função ⊥ serializável → página de entrada do admin quebrava logo após o login|T41
 ```

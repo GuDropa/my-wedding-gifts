@@ -6,7 +6,7 @@ import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import { Heart } from "lucide-react";
 import { PixPanel, type PixData } from "@/components/PixPanel";
 import { Toast, type ToastData } from "@/components/Toast";
-import { paymentRejection, type PaymentFeedback } from "@/lib/mp/status-detail";
+import { FALHA_GENERICA, paymentRejection, type PaymentFeedback } from "@/lib/mp/status-detail";
 import styles from "./presentear.module.css";
 
 interface Props {
@@ -25,11 +25,6 @@ type Status = "loading" | "ready" | "submitting" | "error";
 type PaymentProps = ComponentProps<typeof Payment>;
 type PaymentFormData = Parameters<PaymentProps["onSubmit"]>[0];
 type BrickError = Parameters<NonNullable<PaymentProps["onError"]>>[0];
-
-const FALHA_GENERICA: PaymentFeedback = {
-  title: "Não conseguimos concluir",
-  message: "Não conseguimos concluir esse pagamento. Tente de novo ♥",
-};
 
 export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }: Props) {
   const [status, setStatus] = useState<Status>("loading");

@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Check, Copy, Clock, Heart } from "lucide-react";
+import { PIX_COPY } from "@/lib/pix-copy";
 import styles from "./PixPanel.module.css";
 
 export interface PixData {
@@ -102,10 +103,10 @@ export function PixPanel({ pix, externalReference, giftName }: Props) {
     return (
       <div className={styles.panel}>
         <p className={`ds-body ${styles.failed}`}>
-          O pagamento não foi concluído. Você pode tentar de novo, sem pressa.
+          {PIX_COPY.rejected}
         </p>
         <button type="button" className={styles.cta} onClick={() => location.reload()}>
-          Gerar outro Pix
+          {PIX_COPY.retry}
         </button>
       </div>
     );
@@ -115,10 +116,10 @@ export function PixPanel({ pix, externalReference, giftName }: Props) {
     return (
       <div className={styles.panel}>
         <p className={`ds-body ${styles.failed}`}>
-          Esse código Pix expirou. Geramos um novo em um instante.
+          {PIX_COPY.expired}
         </p>
         <button type="button" className={styles.cta} onClick={() => location.reload()}>
-          Gerar outro Pix
+          {PIX_COPY.retry}
         </button>
       </div>
     );
@@ -126,7 +127,7 @@ export function PixPanel({ pix, externalReference, giftName }: Props) {
 
   return (
     <div className={styles.panel}>
-      <p className={`ds-eyebrow ${styles.eyebrow}`}>Seu Pix está pronto</p>
+      <p className={`ds-eyebrow ${styles.eyebrow}`}>{PIX_COPY.ready}</p>
 
       {pix.qrBase64 && (
         <div className={styles.qrWrap}>
@@ -142,8 +143,7 @@ export function PixPanel({ pix, externalReference, giftName }: Props) {
       )}
 
       <p className={`ds-body-sm ${styles.hint}`}>
-        Abra o app do seu banco, escolha Pix e leia o código acima — ou copie
-        o código abaixo e cole por lá.
+        {PIX_COPY.hint}
       </p>
 
       {pix.qrCode && (
@@ -168,13 +168,13 @@ export function PixPanel({ pix, externalReference, giftName }: Props) {
       {remaining && (
         <p className={`ds-caption ${styles.timer}`}>
           <Clock size={14} strokeWidth={1.5} aria-hidden />
-          Este código vale por mais {remaining}
+          {PIX_COPY.timer} {remaining}
         </p>
       )}
 
       <p className={`ds-body-sm ${styles.waiting}`} role="status" aria-live="polite">
         <Heart size={14} strokeWidth={1.5} className={styles.pulse} aria-hidden />
-        Assim que o pagamento cair, esta tela segue sozinha. Pode deixar aberta.
+        {PIX_COPY.waiting}
       </p>
 
       {pix.ticketUrl && (

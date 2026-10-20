@@ -44,6 +44,12 @@ export async function proxy(req: NextRequest) {
   // ---------- Guest (V1) ----------
   if (GUEST_PUBLIC.has(pathname)) return NextResponse.next();
 
+  // `/admin/mensagens` abre o agradecimento real como prévia p/ o casal.
+  if (pathname === "/obrigado") {
+    const adminToken = req.cookies.get(ADMIN_COOKIE)?.value;
+    if (adminToken && (await decodeAdminToken(adminToken))) return NextResponse.next();
+  }
+
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return NextResponse.redirect(new URL("/", req.url));
   const session = await decodeSession(token);

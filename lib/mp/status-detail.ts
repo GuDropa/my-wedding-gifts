@@ -71,6 +71,16 @@ const PENDENTES: Record<string, string> = {
   pending_challenge: "Falta concluir a verificação de segurança pedida pelo banco do cartão.",
 };
 
+/** Falha sem resposta do MP (rede, 4xx/5xx do nosso backend) — toast em `/presentear/:id`. */
+export const FALHA_GENERICA: PaymentFeedback = {
+  title: "Não conseguimos concluir",
+  message: "Não conseguimos concluir esse pagamento. Tente de novo ♥",
+};
+
+/** Catálogo p/ `/admin/mensagens` — o casal revisa cada aviso antes de publicar. */
+export const REJECTION_CODES = Object.keys(MOTIVOS);
+export const PENDING_CODES = Object.keys(PENDENTES);
+
 const FALLBACK = "Não conseguimos concluir esse pagamento. Tente outro cartão ou o Pix ♥";
 
 export function paymentErrorCopy(statusDetail?: string | null): string {

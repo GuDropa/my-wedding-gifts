@@ -42,7 +42,7 @@ export default async function PresentearPage({
         <section className={styles.brick}>
           <p className={`ds-eyebrow ${styles.brickEyebrow}`}>Concluir presente</p>
           <p className={`ds-body-sm ${styles.brickHint}`}>
-            Pague no cartão ou no Pix — o valor cai direto na nossa conta ♥
+            Pague no Pix ou no cartão, em até 6x. O valor vai direto pra gente ♥
           </p>
           <PaymentClient
             giftId={gift.id}
