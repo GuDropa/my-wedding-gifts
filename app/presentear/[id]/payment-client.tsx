@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
 import { useRouter } from "next/navigation";
-import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
+import type { Payment } from "@mercadopago/sdk-react";
 import { Heart } from "lucide-react";
 import { PixPanel, type PixData } from "@/components/PixPanel";
 import { Toast, type ToastData } from "@/components/Toast";
 import { FALHA_GENERICA, paymentRejection, type PaymentFeedback } from "@/lib/mp/status-detail";
+import { PaymentBrick } from "./payment-brick";
 import styles from "./presentear.module.css";
 
 interface Props {
@@ -19,9 +20,8 @@ interface Props {
 
 type Status = "loading" | "ready" | "submitting" | "error";
 
-// V34: o wrapper do SDK re-inicializa o Brick sempre que muda a identidade de
-// `initialization`/`customization`/callbacks (são deps do useEffect dele).
-// Types derivados do próprio componente — o pacote ⊥ reexporta os dele.
+// V47: o Brick é montado por `PaymentBrick` (1 instância viva por vez).
+// Types derivados do `<Payment>` do SDK — o pacote ⊥ reexporta os dele.
 type PaymentProps = ComponentProps<typeof Payment>;
 type PaymentFormData = Parameters<PaymentProps["onSubmit"]>[0];
 type BrickError = Parameters<NonNullable<PaymentProps["onError"]>>[0];
@@ -86,10 +86,6 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
     if (mountedOnce.current) return;
     mountedOnce.current = true;
 
-    if (publicKey) {
-      initMercadoPago(publicKey, { locale: "pt-BR" });
-    }
-
     (async () => {
       try {
         const res = await fetch("/api/preference", {
@@ -148,7 +144,7 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
     }
   }
 
-  // ---- Props do Brick com identidade estável ∴ monta uma vez só (V34) ----
+  // ---- Props do Brick — `PaymentBrick` lê na montagem; callbacks por ref (V34, V47) ----
   const initialization = useMemo<PaymentProps["initialization"]>(
     () => ({
       amount,
@@ -321,7 +317,8 @@ export function PaymentClient({ giftId, giftName, amount, publicKey, guestName }
           </div>
         )}
         <div className={brickReady ? styles.brickMountReady : styles.brickMount}>
-          <Payment
+          <PaymentBrick
+            publicKey={publicKey}
             initialization={initialization}
             customization={customization}
             onSubmit={handleSubmit}

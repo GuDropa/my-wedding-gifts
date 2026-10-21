@@ -100,7 +100,9 @@
   border-radius: var(--r-pill);
   background: var(--white);
   font-family: var(--font-sans-stack);
-  font-size: 15px;
+  /* V46/B19: < 16px faz o Safari do iPhone dar zoom no foco — e o zoom fica
+     preso nas telas seguintes (navegação client-side ⊥ recarrega a página). */
+  font-size: 16px;
   color: var(--ink);
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }

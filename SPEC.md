@@ -119,6 +119,8 @@ Web app privado p/ casamento de Gabriely & Gustavo (21 / 11 / 2026, Espaço Eden
 - V43: aviso de falha no pagamento ! toast fixo na viewport (`components/Toast`, portal em `body`, `role=alert`) — ⊥ aviso inline acima do Brick, que fica fora da tela de quem tocou em "Pagar"
 - V44: falha no submit → client ! pedir nova `externalReference` (`/api/preference`) antes do próximo envio — a anterior já é IdempotencyKey de uma Purchase (V13); reusar devolve o resultado antigo sem nova tentativa no MP
 - V45: `onError` do Brick ! derrubar o formulário só em `type=critical`; `non_critical` o Brick mostra no próprio campo
+- V46: ∀ campo de texto do convidado → `font-size` ≥ 16px — abaixo disso o Safari do iPhone dá zoom no foco e, sem recarregar a página (navegação client-side), o zoom segue nas telas seguintes
+- V47: ≤ 1 Payment Brick vivo por página — montagem própria (`payment-brick.tsx`), cada montagem espera a anterior desmontar (inclusive `create` ainda pendente) e usa container próprio; ⊥ `<Payment>` do sdk-react
 
 ## §T — Tasks
 
@@ -167,6 +169,8 @@ T39|x|copy alinhada à lista nova (lua de mel em Buenos Aires + casa nova + cota
 T40|x|`/admin/mensagens` — catálogo do que o convidado lê (agradecimento aprovado/pendente c/ link p/ `/obrigado` real, toasts de recusa disparáveis, Pix, esgotado); textos lidos das fontes (`status-detail`, `lib/pix-copy`, `GiftCard`); proxy libera `/obrigado` p/ sessão admin (prévia saúda "Convidado")|V5,V11,V43
 T41|x|`PresentesAdmin` importa `fmtBRL` direto (⊥ prop função)|B18
 T42|x|agradecimento por presente: campo `Gifts.ThankYou` (Airtable, 37 mensagens escritas) → `/obrigado?id=` usa no meio da nota, vazio → mensagem geral c/ P.S.; editável em `/admin/presentes`, prévia por presente em `/admin/mensagens`; checkout & PixPanel passam `id`|V5,V8
+T43|x|busca de nome em `/` c/ 16px (⊥ zoom do iOS)|V46,B19
+T44|x|`PaymentBrick` substitui `<Payment>`: 1 instância viva, teardown de `create` pendente, callbacks por ref, `create` sem controller → erro `critical`|V47,B20
 ```
 
 ## §B — Bugs
@@ -191,4 +195,6 @@ B15|2026-10-14|recusa do MP vem c/ HTTP 200 (`{status:"rejected", statusDetail:"
 B16|2026-10-14|`externalReference` reaproveitada após recusa → `/api/process-payment` achava a Purchase `rejected` pela IdempotencyKey e devolvia o `rejected` antigo (sem `statusDetail`) sem chamar o MP → toda nova tentativa "recusava" até recarregar a página|V44,T38
 B17|2026-10-14|`onError` do Brick tratava todo erro como fatal → erro `non_critical` (ex.: BIN sem meio de pagamento) trocava o formulário inteiro por "Erro no processamento" e jogava fora o que o convidado digitou|V45,T38
 B18|2026-10-20|`/admin/presentes` (server) passava `fmtPrice={(c) => fmtBRL(c)}` p/ `PresentesAdmin` (client) → função ⊥ serializável → página de entrada do admin quebrava logo após o login|T41
+B19|2026-10-21|busca de nome em `/` c/ `font-size: 15px` → Safari do iPhone dava zoom no foco; a navegação client-side ⊥ desfaz o zoom ∴ lista & checkout ficavam ampliados ("zoom que não deveria existir")|V46,T43
+B20|2026-10-21|no celular, e-mail (Pix), nome do titular & documento mostravam o texto mas o Brick acusava "Dado obrigatório". Diagnóstico pelo bundle do MP (⊥ reproduzido — sem chave pública local): o formulário vive em stores globais do bundle, compartilhadas por toda instância viva; o `<Payment>` só registra `window.paymentBrickController` após o `create` assíncrono ∴ desmontar no meio (rede lenta, voltar à lista) deixava instância órfã escrevendo vazio nas mesmas stores; e `create` c/ falha só logava, tela presa em "Preparando"|V47,T44
 ```
